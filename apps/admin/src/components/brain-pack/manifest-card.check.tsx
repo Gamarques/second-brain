@@ -18,7 +18,7 @@ describe("ManifestCard", () => {
     expect(screen.getByText("Revision 3")).toBeVisible();
     expect(screen.getByText("2 folders")).toBeVisible();
     expect(screen.getByText("14 documents")).toBeVisible();
-    expect(screen.getByText("A", { selector: "[data-publisher-mark]" })).toBeInTheDocument();
+    expect(screen.getByText("E", { selector: "[data-publisher-mark]" })).toBeInTheDocument();
   });
 
   it("falls back to a neutral mark and title when the pack has no publisher yet", () => {

@@ -42,6 +42,9 @@
     "release:verify-versions": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && node apps/server/scripts/verify-release-versions.mjs",
     "release:publish": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && node apps/server/scripts/publish-release-artifact.mjs",
     "deploy:package": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && npm run verify:artifacts --workspace @second-brain/server",
-    "deploy:probe": "npm run deploy:probe --workspace @second-brain/engine"
+    "deploy:probe": "npm run deploy:probe --workspace @second-brain/engine",
+    "test:regression": "node tools/test.mjs",
+    "test:changed": "node tools/test.mjs --changed",
+    "test:baseline": "node tools/test.mjs --update-baseline"
   }
 }
