@@ -1,0 +1,24 @@
+name: Branch flow
+
+# Advisory guard (branch protection is unavailable on a private free repo):
+# feature branches go to develop; only develop (or hotfix/*) may target main.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Only develop or hotfix/* may merge into main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            develop|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
+            *) echo "::error::PRs into main must come from develop or hotfix/*, got '$HEAD_REF'. Open the PR against develop instead."; exit 1 ;;
+          esac
