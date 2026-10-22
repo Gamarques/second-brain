@@ -29,4 +29,4 @@ Accepting a deliberate breaking change means editing those JSON files in the sam
 3. Before merging: `npm run test:regression` must report `0 NEW failure(s)`.
 4. If you added capabilities, append them to `baseline/capabilities.json` once released.
 
-Known failing tests are tracked in `docs/TODO-BUGS.md`.
+Known failing tests (currently none) are tracked in `docs/TODO-BUGS.md`.

@@ -146,7 +146,8 @@ describe("admin deployment integration", () => {
     expect(canonicalConfigurationKey(key)).toBe(true);
     expect(result.env["POSTGRES_PASSWORD"]).toBe("already-initialized");
     expect(result.env["OPENROUTER_API_KEY"]).toBe("sk-or-test");
-    expect(result.mode).toBe(0o600);
+    // Windows has no POSIX file modes; enforce 0600 everywhere else.
+    if (process.platform !== "win32") expect(result.mode).toBe(0o600);
     expect(result.stdout).toMatch(/Generated SECOND_BRAIN_CONFIG_ENCRYPTION_KEY/);
     expect(result.stdout).not.toContain(key);
   });
