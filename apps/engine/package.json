@@ -1,0 +1,116 @@
+{
+  "name": "@second-brain/engine",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "files": [
+    "dist",
+    "drizzle",
+    "invokta.mcp.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/engine.ts",
+      "default": "./dist/engine.js"
+    },
+    "./domain": {
+      "types": "./src/domain.ts",
+      "default": "./dist/domain.js"
+    },
+    "./domain/*": {
+      "types": "./src/domain/*.ts",
+      "default": "./dist/domain/*.js"
+    },
+    "./capabilities/*": {
+      "types": "./src/capabilities/*.ts",
+      "default": "./dist/capabilities/*.js"
+    },
+    "./database/*": {
+      "types": "./src/database/*.ts",
+      "default": "./dist/database/*.js"
+    },
+    "./database/schema/*": {
+      "types": "./src/database/schema/*.ts",
+      "default": "./dist/database/schema/*.js"
+    },
+    "./database/stores/*": {
+      "types": "./src/database/stores/*.ts",
+      "default": "./dist/database/stores/*.js"
+    },
+    "./providers/*": {
+      "types": "./src/providers/*.ts",
+      "default": "./dist/providers/*.js"
+    },
+    "./env": {
+      "types": "./src/env.ts",
+      "default": "./dist/env.js"
+    },
+    "./environment-configuration": {
+      "types": "./src/environment-configuration.ts",
+      "default": "./dist/environment-configuration.js"
+    },
+    "./http-auth": {
+      "types": "./src/http-auth.ts",
+      "default": "./dist/http-auth.js"
+    },
+    "./local-principal": {
+      "types": "./src/local-principal.ts",
+      "default": "./dist/local-principal.js"
+    },
+    "./restart-monitor": {
+      "types": "./src/restart-monitor.ts",
+      "default": "./dist/restart-monitor.js"
+    },
+    "./runtime": {
+      "types": "./src/runtime.ts",
+      "default": "./dist/runtime.js"
+    },
+    "./runtime-config": {
+      "types": "./src/runtime-config.ts",
+      "default": "./dist/runtime-config.js"
+    },
+    "./version": {
+      "types": "./src/version.ts",
+      "default": "./dist/version.js"
+    }
+  },
+  "scripts": {
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json --pretty false",
+    "typecheck": "tsc -p tsconfig.json --pretty false --noEmit && tsc -p tsconfig.test.json --pretty false --noEmit",
+    "test": "vitest run test",
+    "test:postgres": "node scripts/run-postgres-tests.mjs",
+    "check:mcp": "invokta check-mcp ./dist/engine.js",
+    "devtools": "npm run build && invokta-devtools serve dist/engine.js --watch --build \"tsc -p tsconfig.json --pretty false\"",
+    "devtools:doctor": "npm run build && invokta-devtools doctor dist/engine.js",
+    "direct": "node dist/direct.js",
+    "mcp:http": "node dist/mcp-http.js",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "npm run build && node dist/database/migrate.js",
+    "deploy:package": "npm run deploy:package --prefix ../..",
+    "deploy:probe": "invokta-deploy probe",
+    "check": "npm run typecheck && npm run test && npm run build && npm run check:mcp"
+  },
+  "dependencies": {
+    "@invokta/core": "0.6.0",
+    "@invokta/mcp": "0.6.0",
+    "drizzle-orm": "0.45.2",
+    "fflate": "^0.8.3",
+    "jose": "^6.2.9",
+    "pg": "^8.23.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@invokta/deploy": "0.6.0",
+    "@invokta/devtools": "0.6.0",
+    "@invokta/tooling": "0.6.0",
+    "@types/node": "26.2.0",
+    "@types/pg": "^8.21.0",
+    "drizzle-kit": "0.31.10",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

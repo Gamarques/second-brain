@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      release_sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: release-please-manifest.json
+
+  publish-installer-artifact:
+    name: Publish verified source artifact
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      INSTALLER_ARTIFACT_API_URL: ${{ vars.INSTALLER_ARTIFACT_API_URL }}
+      INSTALLER_ARTIFACT_OIDC_AUDIENCE: ${{ vars.INSTALLER_ARTIFACT_OIDC_AUDIENCE }}
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - name: Verify the exact release commit
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+          RELEASE_SHA: ${{ needs.release-please.outputs.release_sha }}
+        run: |
+          test -n "$RELEASE_TAG"
+          test -n "$RELEASE_SHA"
+          if ! [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid release commit SHA: $RELEASE_SHA" >&2
+            exit 1
+          fi
+          tag_sha="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          test "$tag_sha" = "$RELEASE_SHA"
+          test "$head_sha" = "$RELEASE_SHA"
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Run the full project check
+        run: npm ci && npm run check
+      - name: Require release version agreement
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: npm run release:verify-versions -- --tag="$RELEASE_TAG"
+      - name: Build the deterministic source archive
+        id: artifact
+        env:
+          RELEASE_SHA: ${{ needs.release-please.outputs.release_sha }}
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          npm run artifact:build -- --revision="$RELEASE_SHA"
+          echo "path=.release/second-brain-v${RELEASE_TAG#v}.tar.gz" \
+            >> "$GITHUB_OUTPUT"
+      - name: Validate and independently hash the archive
+        env:
+          ARTIFACT_PATH: ${{ steps.artifact.outputs.path }}
+        run: |
+          npm run artifact:validate -- "$ARTIFACT_PATH"
+          node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFile } from "node:fs/promises";
+
+          const archivePath = process.env.ARTIFACT_PATH;
+          const summary = JSON.parse(await readFile(`${archivePath}.json`, "utf8"));
+          const archive = await readFile(archivePath);
+          const actual = createHash("sha256").update(archive).digest("hex");
+          if (summary.sha256 !== actual || summary.byteSize !== archive.length) {
+            throw new Error("The independent archive digest or byte size does not match the build summary.");
+          }
+          NODE
+      - name: Publish, activate, and verify through the artifact API
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+          RELEASE_SHA: ${{ needs.release-please.outputs.release_sha }}
+          ARTIFACT_PATH: ${{ steps.artifact.outputs.path }}
+        run: |
+          test -n "$INSTALLER_ARTIFACT_API_URL"
+          test -n "$INSTALLER_ARTIFACT_OIDC_AUDIENCE"
+          npm run release:publish -- \
+            --archive="$ARTIFACT_PATH" \
+            --version="${RELEASE_TAG#v}" \
+            --commit-sha="$RELEASE_SHA"

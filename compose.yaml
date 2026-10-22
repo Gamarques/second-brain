@@ -1,0 +1,240 @@
+name: second-brain
+
+x-engine-image: &engine-image
+  image: ${SECOND_BRAIN_IMAGE:-second-brain}:${SECOND_BRAIN_IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-database-environment: &database-environment
+  PGHOST: postgres
+  PGPORT: "5432"
+  PGDATABASE: ${POSTGRES_DB:-second_brain}
+  PGUSER: ${POSTGRES_USER:-second_brain}
+  PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+
+x-model-environment: &model-environment
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?Set OPENROUTER_API_KEY in .env}
+  OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+  OPENROUTER_EMBEDDING_MODEL: ${OPENROUTER_EMBEDDING_MODEL:-google/gemini-embedding-001}
+  OPENROUTER_EMBEDDING_MODEL_REVISION: ${OPENROUTER_EMBEDDING_MODEL_REVISION:-provider-managed}
+  OPENROUTER_ANSWER_MODEL: ${OPENROUTER_ANSWER_MODEL:-deepseek/deepseek-v4-flash}
+  OPENROUTER_INGESTION_MODEL: ${OPENROUTER_INGESTION_MODEL:-deepseek/deepseek-v4-flash}
+  OPENROUTER_DREAMING_MODEL: ${OPENROUTER_DREAMING_MODEL:-deepseek/deepseek-v4-flash}
+  OPENROUTER_VERIFICATION_MODEL: ${OPENROUTER_VERIFICATION_MODEL:-deepseek/deepseek-v4-flash}
+  OPENROUTER_REQUEST_TIMEOUT_MS: ${OPENROUTER_REQUEST_TIMEOUT_MS:-30000}
+
+x-runtime-configuration-environment: &runtime-configuration-environment
+  SECOND_BRAIN_CONFIG_ENCRYPTION_KEY: ${SECOND_BRAIN_CONFIG_ENCRYPTION_KEY:?Set SECOND_BRAIN_CONFIG_ENCRYPTION_KEY in .env}
+
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg18-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-second_brain}
+      POSTGRES_USER: ${POSTGRES_USER:-second_brain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    shm_size: 256mb
+    logging: *default-logging
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  migrate:
+    <<: *engine-image
+    restart: "no"
+    command: ["node", "dist/database/migrate.js"]
+    environment:
+      <<: *database-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    logging: *default-logging
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  engine:
+    <<: *engine-image
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    environment:
+      <<: [*database-environment, *model-environment, *runtime-configuration-environment]
+      SECOND_BRAIN_PUBLIC_URL: ${SECOND_BRAIN_PUBLIC_URL:?Set SECOND_BRAIN_PUBLIC_URL in .env}
+      INVOKTA_HTTP_AUTH_MODE: ${INVOKTA_HTTP_AUTH_MODE:-oauth}
+      INVOKTA_OAUTH_JWKS_URL: ${INVOKTA_OAUTH_JWKS_URL:-http://auth:3001/jwks}
+      INVOKTA_HTTP_BEARER_TOKEN: ${INVOKTA_HTTP_BEARER_TOKEN:-}
+      INVOKTA_HTTP_PRINCIPAL_ID: ${INVOKTA_HTTP_PRINCIPAL_ID:-}
+      INVOKTA_HTTP_HOST: 0.0.0.0
+      INVOKTA_HTTP_PORT: "3000"
+    # Routing labels for the Traefik edge that ships with the Hostinger Docker
+    # template. Inert during local development, where no Traefik is running.
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.second-brain-mcp.rule=Host(`${SECOND_BRAIN_PUBLIC_HOST:-localhost}`) && (Path(`/mcp`) || Path(`/.well-known/oauth-protected-resource/mcp`))
+      - traefik.http.routers.second-brain-mcp.priority=100
+      - traefik.http.routers.second-brain-mcp.entrypoints=websecure
+      - traefik.http.routers.second-brain-mcp.tls=true
+      - traefik.http.routers.second-brain-mcp.tls.certresolver=letsencrypt
+      - traefik.http.routers.second-brain-mcp.service=second-brain-engine
+      - traefik.http.services.second-brain-engine.loadbalancer.server.port=3000
+    ports:
+      - "${SECOND_BRAIN_BIND_ADDRESS:-127.0.0.1}:${SECOND_BRAIN_HTTP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      migrate:
+        condition: service_completed_successfully
+      auth:
+        condition: service_healthy
+        restart: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+
+  auth:
+    <<: *engine-image
+    working_dir: /app/apps/server
+    restart: unless-stopped
+    init: true
+    command: ["node", "dist/services/auth/main.js"]
+    environment:
+      <<: [*database-environment, *model-environment, *runtime-configuration-environment]
+      SECOND_BRAIN_PUBLIC_URL: ${SECOND_BRAIN_PUBLIC_URL:?Set SECOND_BRAIN_PUBLIC_URL in .env}
+      INVOKTA_OAUTH_HOST: 0.0.0.0
+      INVOKTA_OAUTH_PORT: "3001"
+      # The shared image healthcheck reads this variable.
+      INVOKTA_HTTP_PORT: "3001"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.second-brain-oauth.rule=Host(`${SECOND_BRAIN_PUBLIC_HOST:-localhost}`)
+      - traefik.http.routers.second-brain-oauth.priority=10
+      - traefik.http.routers.second-brain-oauth.entrypoints=websecure
+      - traefik.http.routers.second-brain-oauth.tls=true
+      - traefik.http.routers.second-brain-oauth.tls.certresolver=letsencrypt
+      - traefik.http.routers.second-brain-oauth.service=second-brain-oauth
+      - traefik.http.services.second-brain-oauth.loadbalancer.server.port=3001
+    ports:
+      - "${SECOND_BRAIN_BIND_ADDRESS:-127.0.0.1}:${SECOND_BRAIN_OAUTH_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging: *default-logging
+
+  admin:
+    <<: *engine-image
+    working_dir: /app/apps/server
+    restart: unless-stopped
+    init: true
+    command: ["node", "dist/services/admin/main.js"]
+    environment:
+      <<: [*database-environment, *model-environment, *runtime-configuration-environment]
+      SECOND_BRAIN_PUBLIC_URL: ${SECOND_BRAIN_PUBLIC_URL:?Set SECOND_BRAIN_PUBLIC_URL in .env}
+      INVOKTA_OAUTH_JWKS_URL: ${INVOKTA_OAUTH_JWKS_URL:-http://auth:3001/jwks}
+      SECOND_BRAIN_ADMIN_HOST: 0.0.0.0
+      SECOND_BRAIN_ADMIN_PORT: "3002"
+      SECOND_BRAIN_ADMIN_ASSETS_DIR: /app/admin-ui
+      # The shared image healthcheck reads this variable.
+      INVOKTA_HTTP_PORT: "3002"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.second-brain-admin.rule=Host(`${SECOND_BRAIN_PUBLIC_HOST:-localhost}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/admin`))
+      - traefik.http.routers.second-brain-admin.priority=200
+      - traefik.http.routers.second-brain-admin.entrypoints=websecure
+      - traefik.http.routers.second-brain-admin.tls=true
+      - traefik.http.routers.second-brain-admin.tls.certresolver=letsencrypt
+      - traefik.http.routers.second-brain-admin.service=second-brain-admin
+      - traefik.http.services.second-brain-admin.loadbalancer.server.port=3002
+    ports:
+      - "${SECOND_BRAIN_BIND_ADDRESS:-127.0.0.1}:${SECOND_BRAIN_ADMIN_PORT:-3002}:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      migrate:
+        condition: service_completed_successfully
+      auth:
+        condition: service_healthy
+        restart: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging: *default-logging
+
+  automation-worker:
+    <<: *engine-image
+    working_dir: /app/apps/server
+    restart: unless-stopped
+    init: true
+    command: ["node", "dist/services/automation/main.js"]
+    environment:
+      <<: [*database-environment, *model-environment, *runtime-configuration-environment]
+      SECOND_BRAIN_WORKER_ID: ${SECOND_BRAIN_WORKER_ID:-second-brain-automation-1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Longer than the worker's 300 s job lease, so a stage in flight is never killed mid-lease.
+    stop_grace_period: 6m
+    logging: *default-logging
+
+volumes:
+  postgres-data:

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "bootstrap-sha": "0d33276a91175d85b679c33f6eff81837b5b4d66",
+  "packages": {
+    ".": {
+      "package-name": "second-brain",
+      "component": "second-brain",
+      "changelog-path": "apps/engine/CHANGELOG.md",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "apps/engine/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "generic",
+          "path": "apps/engine/src/version.ts"
+        },
+        {
+          "type": "json",
+          "path": "apps/engine/invokta.mcp.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "apps/server/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "apps/server/package.json",
+          "jsonpath": "$[\"dependencies\"][\"@second-brain/engine\"]"
+        },
+        {
+          "type": "json",
+          "path": "invokta.mcp.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$[\"packages\"][\"apps/engine\"][\"version\"]"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$[\"packages\"][\"apps/server\"][\"version\"]"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$[\"packages\"][\"apps/server\"][\"dependencies\"][\"@second-brain/engine\"]"
+        }
+      ]
+    }
+  }
+}

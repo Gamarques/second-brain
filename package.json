@@ -1,0 +1,47 @@
+{
+  "name": "@second-brain/workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "devDependencies": {
+    "jsdom": "27.0.1",
+    "vitest": "4.1.11"
+  },
+  "scripts": {
+    "dev": "node tools/local-dev.mjs up",
+    "dev:bootstrap": "node tools/local-dev.mjs bootstrap",
+    "dev:logs": "node tools/local-dev.mjs logs",
+    "dev:ps": "node tools/local-dev.mjs ps",
+    "dev:down": "node tools/local-dev.mjs down",
+    "dev:prepare": "node tools/local-dev.mjs prepare",
+    "build": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && npm run build --workspace @second-brain/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:postgres": "npm run test:postgres --workspace @second-brain/engine && npm run test:postgres --workspace @second-brain/server",
+    "check": "npm run check --workspace @second-brain/engine && npm run check --workspace @second-brain/server && npm run check --workspace @second-brain/admin",
+    "db:generate": "npm run db:generate --workspace @second-brain/engine",
+    "db:migrate": "npm run db:migrate --workspace @second-brain/engine",
+    "direct": "npm run direct --workspace @second-brain/engine",
+    "devtools": "npm run devtools --workspace @second-brain/engine",
+    "devtools:doctor": "npm run devtools:doctor --workspace @second-brain/engine",
+    "devtools:runtime": "npm run devtools --workspace @second-brain/engine",
+    "mcp:http": "npm run mcp:http --workspace @second-brain/engine",
+    "oauth:serve": "npm run oauth:serve --workspace @second-brain/server",
+    "oauth:bootstrap": "npm run oauth:bootstrap --workspace @second-brain/server",
+    "admin:dev": "npm run dev --workspace @second-brain/admin",
+    "admin:serve": "npm run admin:serve --workspace @second-brain/server",
+    "automation:worker": "npm run automation:worker --workspace @second-brain/server",
+    "verify:artifacts": "npm run verify:artifacts --workspace @second-brain/server",
+    "artifact:build": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && node apps/server/scripts/build-release-artifact.mjs",
+    "artifact:validate": "node apps/server/scripts/validate-release-artifact.mjs",
+    "release:verify-versions": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && node apps/server/scripts/verify-release-versions.mjs",
+    "release:publish": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && node apps/server/scripts/publish-release-artifact.mjs",
+    "deploy:package": "npm run build --workspace @second-brain/engine && npm run build --workspace @second-brain/server && npm run verify:artifacts --workspace @second-brain/server",
+    "deploy:probe": "npm run deploy:probe --workspace @second-brain/engine"
+  }
+}

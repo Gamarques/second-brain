@@ -1,0 +1,7 @@
+[mcp_servers.hostinger-vps]
+command = "npx"
+args = ["--yes", "--package=hostinger-api-mcp@latest", "hostinger-vps-mcp"]
+env_vars = ["HOSTINGER_API_TOKEN"]
+enabled = true
+startup_timeout_sec = 30
+default_tools_approval_mode = "prompt"

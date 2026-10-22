@@ -1,0 +1,9 @@
+.env
+.env.development
+.claude/settings.local.json
+.claude/worktrees/
+dist/
+.release/
+node_modules/
+*.tsbuildinfo
+.installer-state.json

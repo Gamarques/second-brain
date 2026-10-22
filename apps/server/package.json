@@ -1,0 +1,43 @@
+{
+  "name": "@second-brain/server",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json --pretty false",
+    "verify:artifacts": "node scripts/verify-dist.mjs",
+    "typecheck": "tsc -p tsconfig.json --pretty false --noEmit && tsc -p tsconfig.test.json --pretty false --noEmit",
+    "test": "vitest run",
+    "test:postgres": "node scripts/run-postgres-tests.mjs",
+    "check": "npm run typecheck && npm run test && npm run build && npm run verify:artifacts",
+    "oauth:serve": "node dist/services/auth/main.js",
+    "oauth:bootstrap": "node dist/services/auth/bootstrap-account.js",
+    "admin:serve": "node dist/services/admin/main.js",
+    "automation:worker": "node dist/services/automation/main.js",
+    "prepack": "npm run build && node scripts/verify-dist.mjs"
+  },
+  "dependencies": {
+    "@second-brain/engine": "1.4.0",
+    "@hono/node-server": "2.1.1",
+    "@invokta/core": "0.6.0",
+    "drizzle-orm": "0.45.2",
+    "hono": "4.13.3",
+    "jose": "^6.2.9",
+    "oidc-provider": "~9.11.3",
+    "pg": "^8.23.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/oidc-provider": "^9.11.1",
+    "@types/pg": "^8.21.0",
+    "typescript": "7.0.2"
+  }
+}

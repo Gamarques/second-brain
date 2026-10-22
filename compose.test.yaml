@@ -1,0 +1,24 @@
+name: second-brain-postgres-tests
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg15
+    environment:
+      POSTGRES_DB: second_brain_test_admin
+      POSTGRES_USER: second_brain_test
+      POSTGRES_PASSWORD: second_brain_test
+    ports:
+      - "127.0.0.1::5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U second_brain_test -d second_brain_test_admin",
+        ]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+      start_period: 2s

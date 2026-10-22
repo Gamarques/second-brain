@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "entry": "dist/mcp-http.js",
+  "env": {
+    "required": [
+      "DATABASE_URL",
+      "OPENROUTER_API_KEY",
+      "SECOND_BRAIN_PUBLIC_URL",
+      "SECOND_BRAIN_CONFIG_ENCRYPTION_KEY"
+    ],
+    "optional": [
+      "OPENROUTER_BASE_URL",
+      "OPENROUTER_EMBEDDING_MODEL",
+      "OPENROUTER_EMBEDDING_MODEL_REVISION",
+      "OPENROUTER_ANSWER_MODEL",
+      "OPENROUTER_INGESTION_MODEL",
+      "OPENROUTER_DREAMING_MODEL",
+      "OPENROUTER_VERIFICATION_MODEL",
+      "OPENROUTER_REQUEST_TIMEOUT_MS",
+      "OPENROUTER_APP_URL",
+      "INVOKTA_HTTP_AUTH_MODE",
+      "INVOKTA_OAUTH_ISSUER",
+      "INVOKTA_OAUTH_JWKS_URL",
+      "INVOKTA_OAUTH_HOST",
+      "INVOKTA_OAUTH_PORT",
+      "INVOKTA_OAUTH_ALLOWED_HOSTS",
+      "INVOKTA_HTTP_BEARER_TOKEN",
+      "INVOKTA_HTTP_PRINCIPAL_ID",
+      "INVOKTA_HTTP_HOST",
+      "INVOKTA_HTTP_PORT",
+      "INVOKTA_HTTP_ALLOWED_HOSTS",
+      "INVOKTA_HTTP_ALLOWED_ORIGINS",
+      "INVOKTA_HTTP_MAX_BODY_BYTES",
+      "SECOND_BRAIN_WORKER_ID"
+    ]
+  },
+  "image": {
+    "baseImage": "node:22.23.1-bookworm-slim",
+    "port": 3000
+  },
+  "healthcheck": {
+    "expect": "alive"
+  }
+}
