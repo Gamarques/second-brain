@@ -53,8 +53,18 @@ function fixtureFile(root: string, relativePath: string, content = ""): void {
   writeFileSync(file, content, { flag: "wx" });
 }
 
+// Stage the symbolic link directly in the Git index (mode 120000) instead of
+// creating it on disk. On Windows, `ln -s` from Git Bash/MSYS silently copies
+// the target file, so the fixture would commit a regular file holding the
+// secret content rather than a link, and the archive builder (which only sees
+// the Git tree) has no way to know that file is a disguised secret.
 function fixtureSymlink(root: string, target: string, name: string): void {
-  execFileSync("ln", ["-s", target, path.join(root, name)]);
+  const oid = execFileSync("git", ["-C", root, "hash-object", "-w", "--stdin"], {
+    input: target,
+  })
+    .toString("utf8")
+    .trim();
+  git(root, "update-index", "--add", "--cacheinfo", `120000,${oid},${name}`);
 }
 
 function git(root: string, ...arguments_: readonly string[]): void {
@@ -163,11 +173,7 @@ async function createArchiveFixture(): Promise<string> {
     "credentials",
     ".installer-state.json",
     "node_modules",
-    "CLAUDE.md",
     ".claude.json",
-    "leak-env",
-    "leak-claude-state",
-    "leak-service-account",
   );
   git(root, "commit", "-m", "fixture");
   return root;
@@ -373,7 +379,8 @@ describe("release artifacts", () => {
       expect(tar.includes(Buffer.from(secret))).toBe(false);
     }
     expect(tar.includes(Buffer.from("# Agent instructions"))).toBe(true);
-  });
+    // One `git` process per blob makes this slow on Windows (~5 s locally).
+  }, 30_000);
 
   it("rejects unsafe and malformed tar entries", () => {
     const validName = "package.json";

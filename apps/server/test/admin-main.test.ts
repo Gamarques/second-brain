@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,10 +9,11 @@ import {
 
 describe("admin server composition configuration", () => {
   it("uses safe local defaults and accepts explicit deployment values", () => {
-    expect(readAdminServerConfiguration({}, "/workspace")).toEqual({
+    const workspace = path.resolve("/workspace");
+    expect(readAdminServerConfiguration({}, workspace)).toEqual({
       hostname: "127.0.0.1",
       port: 3_002,
-      assetsDirectory: "/workspace/admin-ui",
+      assetsDirectory: path.join(workspace, "admin-ui"),
     });
 
     expect(
@@ -20,7 +23,7 @@ describe("admin server composition configuration", () => {
           SECOND_BRAIN_ADMIN_PORT: "4100",
           SECOND_BRAIN_ADMIN_ASSETS_DIR: "/srv/admin",
         },
-        "/workspace",
+        workspace,
       ),
     ).toEqual({
       hostname: "0.0.0.0",
