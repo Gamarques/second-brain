@@ -59,9 +59,9 @@ Mesma conta e **mesma chave de API** para os dois; mudam só a base URL e a cobr
 | Produto | Base URL | Cobrança |
 |---|---|---|
 | Zen | `https://opencode.ai/zen/v1` | pré-pago por uso |
-| Go | `https://opencode.ai/zen/go/v1` | assinatura mensal com limite de uso por modelo (janelas de 5 h, semanal e mensal); pode cair para saldo do Zen |
+| Go | `https://opencode.ai/inference/go/openai/v1` (OpenAI) e `https://opencode.ai/inference/go/anthropic/v1` (Anthropic); o caminho antigo `https://opencode.ai/zen/go/v1` também respondeu | assinatura mensal com limite de uso por modelo (janelas de 5 h, semanal e mensal); pode cair para saldo do Zen |
 
-- Ambos entram como **perfis** do adaptador `openai-compatible` (`AI_PROVIDER_OPENCODEGO_BASE_URL=https://opencode.ai/zen/go/v1`, `AI_PROVIDER_OPENCODEZEN_BASE_URL=https://opencode.ai/zen/v1`), com a mesma chave em dois perfis ou perfis separados.
+- Ambos entram como **perfis** do adaptador `openai-compatible` (`AI_PROVIDER_OPENCODEGO_BASE_URL=https://opencode.ai/inference/go/openai/v1`, `AI_PROVIDER_OPENCODEZEN_BASE_URL=https://opencode.ai/zen/v1`), com a mesma chave em dois perfis ou perfis separados.
 - No Go, `/chat/completions` atende GLM, Kimi, DeepSeek e MiMo; **MiniMax e Qwen só respondem em `/messages`** (formato Anthropic). Para usá-los, entra o adaptador `anthropic` (fase P2b). Sem ele, o primeiro corte usa só os modelos OpenAI-compatíveis.
 - O identificador do modelo aparece como `glm-5.2` na documentação do Zen e como `opencode-go/glm-5.2` em alguns exemplos do Go. A forma aceita pela API é confirmada no spike da P2 (não presumir).
 - Limite de assinatura significa **HTTP 429 em uso intenso** (ingestão e dreaming rodam em lote): o adaptador genérico precisa de retry com espera e de falha limpa por papel, em vez de derrubar o worker.
@@ -97,7 +97,7 @@ Mesma conta e **mesma chave de API** para os dois; mudam só a base URL e a cobr
 | P0 | Teste de contrato dos provedores: fixtures de resposta (chat, json_schema, embeddings, erros, timeout, abort) rodando contra `OpenRouterProvider` | Passa hoje; vira a especificação que todo adaptador precisa cumprir |
 | P1 | Extrair interface de adaptador e o registro; mover o código atual para o adaptador `openrouter` sem mudar comportamento | Suíte inteira + P0 verdes; diff de comportamento zero; `OPENROUTER_*` funciona sem nenhuma `AI_*` |
 | P2 | Adaptador `openai-compatible` com degradação de saída estruturada e retry em 429; perfis OpenCode **Zen e Go** | P0 verde também para ele; testado contra servidor fake e, em spike manual, contra Zen **e Go** reais (json_schema strict, formato do id do modelo, 429) |
-| P2b | Adaptador `anthropic` (`/messages`) para MiniMax/Qwen do Go (opcional) | Mesmo contrato de P0; só se esses modelos forem desejados |
+| P2b | Adaptador `anthropic` (`/messages`, saída estruturada por `tool_use` forçado) para **Qwen** (e MiniMax) do Go | Mesmo contrato de P0; **no escopo: Qwen foi escolhido pelo usuário** |
 | P3 | Vínculo por papel (`AI_*`), validação de inicialização, `AI_REQUIRE_ZDR` | Testes de composição; falha fechada em configuração inconsistente |
 | P4 | Painel: perfis, tabela de papéis, sonda por papel, i18n en/pt-BR/es | Testes de componente; verificação visual |
 | P5 | Runbook de troca de embeddings (re-embedding) e, se desejado, capability de operador | Procedimento testado em banco de preview |
@@ -113,7 +113,31 @@ Cada fase vai por branch a partir da `main` → PR para `develop` (ver `plano-br
 
 ## 6. Perguntas em aberto
 
-1. ~~Quais provedores no primeiro corte?~~ Respondido: **OpenCode (Zen e Go) para chat, OpenRouter para embeddings e reserva**. Falta decidir se MiniMax/Qwen (P2b) interessam.
+1. ~~Quais provedores no primeiro corte?~~ Respondido: **OpenCode (Zen e Go) para chat, OpenRouter para embeddings e reserva**. Modelos preferidos: **Qwen** (3.8 Flash/Max, 3.7 Plus) e **DeepSeek V4.1 Flash**; Qwen exige a P2b.
 2. Embeddings: qual provedor/modelo? Aceita o 1536 fixo ou prefere migrar o esquema?
 3. ZDR é requisito seu ou pode ser só informativo?
 4. Mantemos compatibilidade com `OPENROUTER_*` indefinidamente (recomendado) ou migramos de vez?
+
+## 7. Resultado do spike de P2 (2026-10-22, chamadas reais, chave Go do usuário)
+
+| Teste | Resultado |
+|---|---|
+| Go `GET /zen/go/v1/models` | 200, 36 modelos (inclui `deepseek-v4.1-flash`, `qwen3.8-flash`, `qwen3.8-max`, `qwen3.7-plus`) |
+| DeepSeek V4.1 Flash, `POST /inference/go/openai/v1/chat/completions`, `response_format: json_schema` **strict** | **200**, JSON válido; `json_object` também funciona |
+| Qwen3.8 Flash, `POST /inference/go/anthropic/v1/messages`, `tool_choice` forçado | **200**, `tool_use` com o objeto; resposta traz bloco `thinking` |
+| Zen `POST /zen/v1/chat/completions` com a chave pré-paga | **402 "Insufficient account funds"**: a conta Zen está sem saldo (Go funciona, Zen não, até recarregar) |
+| Qualquer chamada do Go com `User-Agent` padrão de biblioteca (ex.: Python-urllib) | **403 `error code: 1010`** (bloqueio do edge) |
+| Go sem cabeçalho `x-opencode-session` | **400 `MissingSessionID`** |
+
+Consequências para o adaptador:
+
+1. Enviar `User-Agent: second-brain/<versão>` próprio (nunca o padrão do HTTP client) e `x-opencode-session` estável por conversa/job (ex.: id do job de dreaming, do run de ingestão ou da pergunta).
+2. DeepSeek e Qwen são modelos de **raciocínio**: tokens de raciocínio contam em `completion_tokens` e `max_tokens` baixo trunca a resposta (`{"ok":` cortado). O adaptador precisa de orçamento de tokens maior e, quando possível, desligar/limitar o raciocínio.
+3. `usage` não traz custo em dinheiro: `cost = null` (o projeto nunca estima).
+4. Qwen só pelo adaptador `anthropic` (P2b); a saída estruturada é por `tool_use` forçado, validada pelo mesmo Zod.
+5. Tratar 402 (sem saldo/limite), 429 (janela de uso) e 403 1010 como erros classificados e acionáveis no painel.
+6. Retenção declarada pelo OpenCode: Qwen e DeepSeek "não usados para treino, 0 dias"; o acordo ZDR do DeepSeek é renovado mensalmente (válido até 31/10/2026 na data da consulta). Perfil `PRIVACY=attested`.
+
+### Risco de termos do Go (decisão do usuário)
+
+A documentação do Go diz que ele é "desenhado para o OpenCode e outros agentes de código que produzem requisições semelhantes", com monitoramento de abuso, e pede que o cliente (1) envie tráfego típico de agente de código, (2) se identifique com user agent próprio e (3) envie `x-opencode-session`. O Second Brain atende 2 e 3, **mas não 1**: ingestão, dreaming e perguntas sobre memórias não são tráfego de agente de código. Risco: limitação ou suspensão da assinatura. Mitigações: volume baixo, identificação honesta, OpenRouter como reserva por papel, e a alternativa **Zen pré-pago** (mesmos preços por token; para o volume de um cérebro pessoal tende a custar centavos por mês) como caminho sem ambiguidade de termos.
