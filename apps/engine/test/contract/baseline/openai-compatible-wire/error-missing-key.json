@@ -1,0 +1,207 @@
+{
+  "missing": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  "empty": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  "blank": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "An API key for OpenCode Go is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  "allowUnauthenticated": {
+    "requests": [
+      {
+        "url": "http://127.0.0.1:11434/v1/chat/completions",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "content-type": "application/json",
+          "user-agent": "second-brain/1.4.0",
+          "x-opencode-session": "<session-uuid>"
+        },
+        "body": {
+          "model": "llama3.2",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Return {\"ok\":true}."
+            }
+          ],
+          "max_tokens": 128,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "configuration_probe",
+              "strict": true,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ok": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "ok"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "result": {
+        "ok": true
+      }
+    },
+    "observed": [
+      {
+        "operation": "diagnostic",
+        "model": "llama3.2",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ]
+  }
+}

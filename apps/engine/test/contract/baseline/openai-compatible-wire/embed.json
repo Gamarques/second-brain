@@ -1,0 +1,57 @@
+{
+  "requests": [
+    {
+      "url": "https://llm.example.test/v1/embeddings",
+      "method": "POST",
+      "init": [
+        "method",
+        "headers",
+        "body",
+        "signal"
+      ],
+      "headers": {
+        "authorization": "Bearer <redacted>",
+        "content-type": "application/json",
+        "user-agent": "second-brain/1.4.0",
+        "x-opencode-session": "<session-uuid>"
+      },
+      "body": {
+        "model": "test/embedding-model",
+        "input": [
+          "first",
+          "second"
+        ],
+        "encoding_format": "float",
+        "dimensions": 3
+      },
+      "signal": true
+    }
+  ],
+  "outcome": {
+    "result": [
+      [
+        1,
+        0,
+        0.5
+      ],
+      [
+        0,
+        1,
+        0
+      ]
+    ]
+  },
+  "observed": [
+    {
+      "operation": "embedding",
+      "model": "test/embedding-model",
+      "occurredAt": "<timestamp>",
+      "durationMs": "<duration>",
+      "outcome": "succeeded",
+      "inputTokens": 8,
+      "outputTokens": null,
+      "cost": null,
+      "errorReason": null
+    }
+  ]
+}
