@@ -2,7 +2,25 @@
 
 ## Open
 
-(none)
+### TODO-005: Deploy workflow fails on every push to main when no VPS is configured
+- Found: 2026-10-22 by GitHub Actions run 39830628333 (Deploy) after merging PR #1, `.github/workflows/deploy.yml`
+- Evidence: `/home/runner/.ssh/config line 2: no argument after keyword "hostname"` then exit 255 (secrets VPS_HOST / VPS_USER / VPS_SSH_KEY are unset)
+- Expected / acceptance criteria:
+  - Deploy is skipped (not failed) while `vars.DEPLOY_ENABLED != 'true'`, and runs normally when it is set.
+  - No change to the production deploy steps themselves.
+  - Documented in `docs/plano-branches-e-ambientes.md` section 4.
+- Severity: low (noise now, becomes production deploy once a VPS exists)
+- Status: open
+
+### TODO-006: release-please cannot open its release PR
+- Found: 2026-10-22 by GitHub Actions run 39833325177 (Release), `.github/workflows/release.yml`
+- Evidence: `release-please failed: GitHub Actions is not permitted to create or approve pull requests`; it left the branch `release-please--branches--main--components--second-brain` behind.
+- Expected / acceptance criteria:
+  - Repo setting "Allow GitHub Actions to create and approve pull requests" enabled (Settings -> Actions -> General), or a PAT configured for release-please.
+  - Re-running the Release workflow on main opens a release PR instead of failing.
+  - The orphan branch is reused by release-please or deleted.
+- Severity: low
+- Status: open
 
 ## Done
 
