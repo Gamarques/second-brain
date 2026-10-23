@@ -1,0 +1,61 @@
+{
+  "requests": [
+    {
+      "url": "https://openrouter.ai/api/v1/embeddings",
+      "method": "POST",
+      "init": [
+        "method",
+        "headers",
+        "body",
+        "signal"
+      ],
+      "headers": {
+        "authorization": "Bearer <redacted>",
+        "content-type": "application/json",
+        "x-title": "second-brain"
+      },
+      "body": {
+        "model": "test/embedding-model",
+        "input": [
+          "first",
+          "second"
+        ],
+        "input_type": "search_document",
+        "encoding_format": "float",
+        "dimensions": 3,
+        "provider": {
+          "data_collection": "deny",
+          "zdr": true
+        }
+      },
+      "signal": true
+    }
+  ],
+  "outcome": {
+    "result": [
+      [
+        1,
+        0,
+        0.5
+      ],
+      [
+        0,
+        1,
+        0
+      ]
+    ]
+  },
+  "observed": [
+    {
+      "operation": "embedding",
+      "model": "test/embedding-model",
+      "occurredAt": "<timestamp>",
+      "durationMs": "<duration>",
+      "outcome": "succeeded",
+      "inputTokens": 8,
+      "outputTokens": null,
+      "cost": 0.00001,
+      "errorReason": null
+    }
+  ]
+}

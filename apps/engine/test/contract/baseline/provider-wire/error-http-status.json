@@ -1,0 +1,681 @@
+[
+  {
+    "status": 400,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 400.",
+        "fields": {
+          "status": 400,
+          "reason": "unknown",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unknown"
+      }
+    ]
+  },
+  {
+    "status": 401,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  {
+    "status": 402,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 402.",
+        "fields": {
+          "status": 402,
+          "reason": "credits",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "credits"
+      }
+    ]
+  },
+  {
+    "status": 403,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 403.",
+        "fields": {
+          "status": 403,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  {
+    "status": 404,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 404.",
+        "fields": {
+          "status": 404,
+          "reason": "unavailable",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unavailable"
+      }
+    ]
+  },
+  {
+    "status": 404,
+    "body": {
+      "error": {
+        "message": "No endpoints found matching your data policy (Zero data retention). upstream secret detail"
+      }
+    },
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 404.",
+        "fields": {
+          "status": 404,
+          "reason": "privacy",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "privacy"
+      }
+    ]
+  },
+  {
+    "status": 404,
+    "body": {
+      "error": {
+        "message": 42
+      }
+    },
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 404.",
+        "fields": {
+          "status": 404,
+          "reason": "unavailable",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unavailable"
+      }
+    ]
+  },
+  {
+    "status": 429,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 429.",
+        "fields": {
+          "status": 429,
+          "reason": "rate_limit",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "rate_limit"
+      }
+    ]
+  },
+  {
+    "status": 500,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 500.",
+        "fields": {
+          "status": 500,
+          "reason": "unknown",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unknown"
+      }
+    ]
+  },
+  {
+    "status": 502,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 502.",
+        "fields": {
+          "status": 502,
+          "reason": "unknown",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unknown"
+      }
+    ]
+  },
+  {
+    "status": 503,
+    "body": null,
+    "requests": [
+      {
+        "url": "https://openrouter.ai/api/v1/embeddings",
+        "method": "POST",
+        "init": [
+          "method",
+          "headers",
+          "body",
+          "signal"
+        ],
+        "headers": {
+          "authorization": "Bearer <redacted>",
+          "content-type": "application/json",
+          "x-title": "second-brain"
+        },
+        "body": {
+          "model": "test/embedding-model",
+          "input": [
+            "text"
+          ],
+          "input_type": "search_document",
+          "encoding_format": "float",
+          "dimensions": 3,
+          "provider": {
+            "data_collection": "deny",
+            "zdr": true
+          }
+        },
+        "signal": true
+      }
+    ],
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 503.",
+        "fields": {
+          "status": 503,
+          "reason": "unavailable",
+          "code": "OPENROUTER_REQUEST_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unavailable"
+      }
+    ]
+  }
+]
