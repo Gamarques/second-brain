@@ -1,0 +1,71 @@
+{
+  "requests": [
+    {
+      "url": "https://llm.example.test/v1/chat/completions",
+      "method": "POST",
+      "init": [
+        "method",
+        "headers",
+        "body",
+        "signal"
+      ],
+      "headers": {
+        "authorization": "Bearer <redacted>",
+        "content-type": "application/json",
+        "user-agent": "second-brain/1.4.0",
+        "x-opencode-session": "<session-uuid>"
+      },
+      "body": {
+        "model": "test/probe-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Return {\"ok\":true}."
+          }
+        ],
+        "max_tokens": 128,
+        "response_format": {
+          "type": "json_schema",
+          "json_schema": {
+            "name": "configuration_probe",
+            "strict": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              },
+              "required": [
+                "ok"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "signal": true
+    }
+  ],
+  "outcome": {
+    "result": {
+      "ok": true
+    }
+  },
+  "observed": [
+    {
+      "operation": "diagnostic",
+      "model": "test/probe-model",
+      "occurredAt": "<timestamp>",
+      "durationMs": "<duration>",
+      "outcome": "succeeded",
+      "inputTokens": 20,
+      "outputTokens": 5,
+      "cost": null,
+      "errorReason": null
+    }
+  ]
+}

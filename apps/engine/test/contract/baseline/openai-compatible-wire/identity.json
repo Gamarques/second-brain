@@ -1,0 +1,292 @@
+{
+  "configured": {
+    "provider": "opencode-go",
+    "model": "test/embedding-model",
+    "modelRevision": "2026-08-01",
+    "dimensions": 3,
+    "ingestionProvider": "opencode-go",
+    "ingestionModel": "test/ingestion-model"
+  },
+  "defaultKind": {
+    "provider": "openai-compatible",
+    "model": "test/embedding-model",
+    "modelRevision": "2026-08-01",
+    "dimensions": 3,
+    "ingestionProvider": "openai-compatible",
+    "ingestionModel": "test/ingestion-model"
+  },
+  "constructorErrors": [
+    {
+      "options": {
+        "baseUrl": "http://example.com/v1"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go base URL must use HTTPS outside loopback development.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "baseUrl": "not a url"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "fields": {
+          "code": "ERR_INVALID_URL",
+          "input": "not a url"
+        }
+      }
+    },
+    {
+      "options": {
+        "kind": "OpenCode Go"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Provider kind must be 1-64 lowercase letters, digits, dots, underscores, or hyphens.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "displayName": " "
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Provider display name must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "structuredOutput": "xml"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go structured output mode must be json_schema, json_object, or prompt.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "userAgent": " "
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go user agent must be a non-blank single line.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "userAgent": "second-brain\r\nx-injected: 1"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go user agent must be a non-blank single line.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "sessionHeader": "authorization"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go session header \"authorization\" is invalid or reserved.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "sessionHeader": "bad header"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go session header \"bad header\" is invalid or reserved.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "sessionId": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go session id must be a non-blank single line.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "extraHeaders": {
+          "Authorization": "Bearer other"
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go extra header \"Authorization\" is invalid or reserved.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "extraHeaders": {
+          "User-Agent": "python-urllib/3"
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go extra header \"User-Agent\" is invalid or reserved.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "extraHeaders": {
+          "x-opencode-session": "fixed"
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go extra header \"x-opencode-session\" is invalid or reserved.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "extraHeaders": {
+          "x-ok": "line\nbreak"
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go extra header \"x-ok\" must have a single-line value.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "minCompletionTokens": -1
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go minimum completion tokens must be a non-negative integer.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "completionTokenMultiplier": 0.5
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go completion token multiplier must be a finite number of at least 1.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "completionTokenMultiplier": "Infinity"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go completion token multiplier must be a finite number of at least 1.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "chatRequestExtras": {
+          "max_tokens": 10
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go chat request extras cannot replace \"max_tokens\".",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "retry": {
+          "maxAttempts": 4
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go retry attempts must be an integer from 1 to 3.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "retry": {
+          "maxAttempts": 0
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go retry attempts must be an integer from 1 to 3.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "retry": {
+          "maxDelayMs": -1
+        }
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenCode Go retry delay cap must be a non-negative integer.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "answerModel": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Answer model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "dimensions": 0
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Embedding dimensions must be a positive integer.",
+        "fields": {}
+      }
+    }
+  ]
+}

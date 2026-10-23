@@ -14,6 +14,11 @@ if (integrationTestSelected && process.env.POSTGRES_INTEGRATION_TESTS !== "1") {
 
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, "test/integration/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      "test/integration/**",
+      // Live provider smoke tests need real credentials and run only on request.
+      ...(process.env.OPENAI_COMPATIBLE_LIVE === "1" ? [] : ["test/live/**"]),
+    ],
   },
 });
