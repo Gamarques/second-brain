@@ -50,7 +50,24 @@ Compatibilidade: se nenhuma `AI_*` estiver definida, as variáveis `OPENROUTER_*
 |---|---|---|
 | `openrouter` | O comportamento atual, extraído para um adaptador | Mantém ZDR, `usage.cost`, catálogo ZDR |
 | `openai-compatible` (genérico) | OpenCode Zen (`https://opencode.ai/zen/v1`), OpenAI, DeepSeek direto, Groq, Together, LiteLLM, vLLM, Ollama (`/v1`) | Só campos padrão (`/chat/completions`, `/embeddings`); sem `provider.*` |
-| `anthropic` (futuro) | Claude direto | Fora do primeiro corte |
+| `anthropic` (protocolo `/messages`) | Modelos do OpenCode Go que **não** falam OpenAI (MiniMax, Qwen), Claude direto | Necessário se quiser esses modelos; ver seção 3.2.1 |
+
+#### 3.2.1 OpenCode Zen e OpenCode Go
+
+Mesma conta e **mesma chave de API** para os dois; mudam só a base URL e a cobrança:
+
+| Produto | Base URL | Cobrança |
+|---|---|---|
+| Zen | `https://opencode.ai/zen/v1` | pré-pago por uso |
+| Go | `https://opencode.ai/zen/go/v1` | assinatura mensal com limite de uso por modelo (janelas de 5 h, semanal e mensal); pode cair para saldo do Zen |
+
+- Ambos entram como **perfis** do adaptador `openai-compatible` (`AI_PROVIDER_OPENCODEGO_BASE_URL=https://opencode.ai/zen/go/v1`, `AI_PROVIDER_OPENCODEZEN_BASE_URL=https://opencode.ai/zen/v1`), com a mesma chave em dois perfis ou perfis separados.
+- No Go, `/chat/completions` atende GLM, Kimi, DeepSeek e MiMo; **MiniMax e Qwen só respondem em `/messages`** (formato Anthropic). Para usá-los, entra o adaptador `anthropic` (fase P2b). Sem ele, o primeiro corte usa só os modelos OpenAI-compatíveis.
+- O identificador do modelo aparece como `glm-5.2` na documentação do Zen e como `opencode-go/glm-5.2` em alguns exemplos do Go. A forma aceita pela API é confirmada no spike da P2 (não presumir).
+- Limite de assinatura significa **HTTP 429 em uso intenso** (ingestão e dreaming rodam em lote): o adaptador genérico precisa de retry com espera e de falha limpa por papel, em vez de derrubar o worker.
+- Privacidade: a documentação do Go declara retenção zero e sem treino, mas isso é uma declaração do provedor, então o perfil fica como `PRIVACY=attested`, não `enforced`.
+- `GET /zen/go/v1/usage` existe mas é endpoint não documentado; não depender dele.
+- Embeddings: nenhum dos dois lista modelos de embedding; ficam no OpenRouter (decisão do usuário: OpenCode para chat, OpenRouter para embeddings e como reserva).
 
 ### 3.3 Capacidades por perfil (o que muda de um provedor para outro)
 
@@ -79,7 +96,8 @@ Compatibilidade: se nenhuma `AI_*` estiver definida, as variáveis `OPENROUTER_*
 |---|---|---|
 | P0 | Teste de contrato dos provedores: fixtures de resposta (chat, json_schema, embeddings, erros, timeout, abort) rodando contra `OpenRouterProvider` | Passa hoje; vira a especificação que todo adaptador precisa cumprir |
 | P1 | Extrair interface de adaptador e o registro; mover o código atual para o adaptador `openrouter` sem mudar comportamento | Suíte inteira + P0 verdes; diff de comportamento zero; `OPENROUTER_*` funciona sem nenhuma `AI_*` |
-| P2 | Adaptador `openai-compatible` com degradação de saída estruturada | P0 verde também para ele; testado contra servidor fake e contra Zen real (teste manual documentado) |
+| P2 | Adaptador `openai-compatible` com degradação de saída estruturada e retry em 429; perfis OpenCode **Zen e Go** | P0 verde também para ele; testado contra servidor fake e, em spike manual, contra Zen **e Go** reais (json_schema strict, formato do id do modelo, 429) |
+| P2b | Adaptador `anthropic` (`/messages`) para MiniMax/Qwen do Go (opcional) | Mesmo contrato de P0; só se esses modelos forem desejados |
 | P3 | Vínculo por papel (`AI_*`), validação de inicialização, `AI_REQUIRE_ZDR` | Testes de composição; falha fechada em configuração inconsistente |
 | P4 | Painel: perfis, tabela de papéis, sonda por papel, i18n en/pt-BR/es | Testes de componente; verificação visual |
 | P5 | Runbook de troca de embeddings (re-embedding) e, se desejado, capability de operador | Procedimento testado em banco de preview |
@@ -95,7 +113,7 @@ Cada fase vai por branch a partir da `main` → PR para `develop` (ver `plano-br
 
 ## 6. Perguntas em aberto
 
-1. Quais provedores você quer de fato no primeiro corte (OpenCode Zen, OpenRouter, outro)?
+1. ~~Quais provedores no primeiro corte?~~ Respondido: **OpenCode (Zen e Go) para chat, OpenRouter para embeddings e reserva**. Falta decidir se MiniMax/Qwen (P2b) interessam.
 2. Embeddings: qual provedor/modelo? Aceita o 1536 fixo ou prefere migrar o esquema?
 3. ZDR é requisito seu ou pode ser só informativo?
 4. Mantemos compatibilidade com `OPENROUTER_*` indefinidamente (recomendado) ou migramos de vez?
