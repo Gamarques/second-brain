@@ -1,7 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import {
-  environmentConfigurationCatalog,
+  environmentConfigurationItem,
+  maximumEnvironmentConfigurationChanges,
   type EditableEnvironmentVariableName,
   type EnvironmentConfigurationState,
   type EnvironmentConfigurationRestartResult,
@@ -26,12 +27,6 @@ import {
 import { authorizeBrainTransaction } from "@second-brain/engine/database/stores/authorization";
 import type { SecondBrainDatabase } from "@second-brain/engine/database/stores/database";
 
-const configurationNames = new Set<EditableEnvironmentVariableName>(
-  environmentConfigurationCatalog.map(({ name }) => name),
-);
-const secretNames = new Set<EditableEnvironmentVariableName>(
-  environmentConfigurationCatalog.filter(({ secret }) => secret).map(({ name }) => name),
-);
 const digestPattern = /^[0-9a-f]{64}$/u;
 const base64UrlPattern = /^[A-Za-z0-9_-]+$/u;
 const defaultSignal = new AbortController().signal;
@@ -54,7 +49,7 @@ function isObject(value: unknown): value is Readonly<Record<string, unknown>> {
 }
 
 function editableName(value: string): EditableEnvironmentVariableName {
-  if (!configurationNames.has(value as EditableEnvironmentVariableName)) {
+  if (environmentConfigurationItem(value) === undefined) {
     fail("The stored environment configuration contains an unknown name.");
   }
   return value as EditableEnvironmentVariableName;
@@ -98,7 +93,7 @@ function decodeEntry(
   value: unknown,
 ): StoredEnvironmentConfigurationEntry {
   if (!isObject(value)) fail(`The stored value for ${name} is invalid.`);
-  if (secretNames.has(name)) return decodeSecret(value);
+  if (environmentConfigurationItem(name)?.secret === true) return decodeSecret(value);
   if (value.kind !== "plain" || typeof value.value !== "string") {
     fail(`The stored value for ${name} is invalid.`);
   }
@@ -156,7 +151,7 @@ function validateStageInput(input: StageEnvironmentConfigurationStoreInput): voi
   }
   if (
     input.changes.length < 1 ||
-    input.changes.length > environmentConfigurationCatalog.length
+    input.changes.length > maximumEnvironmentConfigurationChanges
   ) {
     fail("changes must contain an allowed number of variables.");
   }

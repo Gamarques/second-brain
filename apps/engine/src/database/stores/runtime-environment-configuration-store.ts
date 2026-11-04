@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import {
-  environmentConfigurationCatalog,
+  environmentConfigurationItem,
   type EditableEnvironmentVariableName,
   type EnvironmentConfigurationState,
   type SecretEnvironmentConfigurationEntry,
@@ -10,14 +10,6 @@ import {
 import { environmentConfiguration } from "../schema/admin.js";
 import type { SecondBrainDatabase } from "./database.js";
 
-const configurationNames = new Set<EditableEnvironmentVariableName>(
-  environmentConfigurationCatalog.map(({ name }) => name),
-);
-const secretNames = new Set<EditableEnvironmentVariableName>(
-  environmentConfigurationCatalog
-    .filter(({ secret }) => secret)
-    .map(({ name }) => name),
-);
 const base64UrlPattern = /^[A-Za-z0-9_-]+$/u;
 const digestPattern = /^[0-9a-f]{64}$/u;
 
@@ -52,7 +44,7 @@ function entry(
   value: unknown,
 ): StoredEnvironmentConfigurationEntry {
   const record = object(value);
-  if (!secretNames.has(name)) {
+  if (environmentConfigurationItem(name)?.secret !== true) {
     if (record.kind !== "plain" || typeof record.value !== "string") {
       fail(`The stored value for ${name} is invalid.`);
     }
@@ -81,7 +73,7 @@ function entries(value: unknown): EnvironmentConfigurationState["entries"] {
     Record<EditableEnvironmentVariableName, StoredEnvironmentConfigurationEntry>
   > = {};
   for (const [rawName, valueEntry] of Object.entries(object(value))) {
-    if (!configurationNames.has(rawName as EditableEnvironmentVariableName)) {
+    if (environmentConfigurationItem(rawName) === undefined) {
       fail("The stored environment configuration contains an unknown name.");
     }
     const name = rawName as EditableEnvironmentVariableName;
