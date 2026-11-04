@@ -111,6 +111,7 @@ Proposta (não implementada): o `deploy.yml` só roda se a variável de reposit�
 | E2 | VPS provisionada (`deploy/vps-setup.sh`), domínio, Traefik, wildcard DNS-01 | domínio e VPS |
 | E3 | `deploy-preview.yml` + `reap-previews.sh` + testes do script de expiração | E2 |
 | E4 | Comentário automático na PR e comandos de extend/destroy | E3 |
+| E5 | Observabilidade da VPS (seção 7); **fase posterior, só depois de a VPS existir** | E2 |
 
 ## 6. Perguntas em aberto
 
@@ -118,3 +119,36 @@ Proposta (não implementada): o `deploy.yml` só roda se a variável de reposit�
 2. TTL padrão de 48 h está bom? Limite de 2 previews simultâneos?
 3. Aceita o repo continuar privado sem proteção de branch, ou quer assinar o GitHub Pro?
 4. Preview precisa de URL aberta na internet ou basta VPN/IP allowlist?
+
+## 7. Observabilidade (fase posterior, depende da VPS)
+
+Status: decisão registrada, **nada a implementar até a VPS existir (E2)**.
+
+### Por que não Datadog
+
+Consultado em 2026-11: o plano gratuito antigo (até 5 hosts, 1 dia de retenção) foi substituído por um plano "Basic" com preço sob consulta e **sem monitoramento de containers**; o plano com containers é o Infrastructure Pro, a US$ 15 por host por mês (anual). Os preços mudaram poucos dias antes da consulta: reconferir em https://www.datadoghq.com/pricing/ antes de qualquer decisão. O recurso de LLM Observability (40 mil spans/mês grátis) exige instrumentar o código e duplica a página "AI consumption" do painel.
+
+### Pilha proposta (tudo grátis, tudo em um Compose separado do da aplicação)
+
+| Necessidade | Ferramenta | Notas |
+|---|---|---|
+| Disponibilidade e alerta no celular | Uptime Kuma (self-hosted) ou UptimeRobot | Checar `/mcp` (desafio Bearer), `/admin`, descoberta OAuth e o healthcheck do `deploy/healthcheck.mjs` |
+| CPU, RAM, disco, containers | Beszel ou Netdata | Leves; Prometheus + Loki + Grafana próprios só se a VPS tiver folga (RAM disputa com os previews) |
+| Logs de containers | Dozzle | O Compose já limita os logs (`json-file`, 10 MB x 3) |
+| Alternativa gerenciada | Grafana Cloud (plano gratuito: 10 mil séries ativas, 50 GB de logs, 14 dias) | Exige agente na VPS; sem custo, com limites |
+
+Regras: qualquer painel de observabilidade fica **atrás de VPN ou autenticação**, nunca exposto na internet; o Docker socket só é montado somente-leitura e apenas nos agentes que precisam dele; alertas por e-mail ou Telegram.
+
+### O que já existe no produto (usar antes de instalar qualquer coisa)
+
+Healthchecks dos containers, heartbeat do worker e fila de jobs no painel admin, log de auditoria com redação e a página "AI consumption" (tokens, latência, custo reportado, categorias de falha).
+
+### Chaves de API
+
+Monitorar servidor não enxerga uso de chave. A proteção é de outra natureza:
+
+1. Teto de gasto/créditos **por chave** no painel do provedor (o worker não aplica orçamento local).
+2. Uma chave por ambiente (produção e preview), cada uma com teto próprio.
+3. Chaves apenas em `.env` com modo 0600, nunca no repositório (o `guardrails/scan` já roda nas PRs).
+4. Alerta de saldo baixo por e-mail no provedor; revisar a página "AI consumption" periodicamente.
+5. Rotação: a `SECOND_BRAIN_CONFIG_ENCRYPTION_KEY` **não** rotaciona por troca da variável (segredos guardados não decifram com chave nova).
