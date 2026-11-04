@@ -28,13 +28,8 @@ import { serveMcpHttp } from "@invokta/mcp";
 import {
   EngineStartupError,
   reportStartupFailure,
-  requireEnvironment,
 } from "./env.js";
 import { requireDatabaseConfiguration } from "./database/config.js";
-
-const requiredEnvironmentNames = [
-  "OPENROUTER_API_KEY",
-] as const;
 
 const defaultHost = "127.0.0.1";
 const defaultPort = 3000;
@@ -85,7 +80,9 @@ function readInteger(
 }
 
 async function main(): Promise<void> {
-  requireEnvironment(requiredEnvironmentNames);
+  // OPENROUTER_API_KEY without provider registry variables, otherwise every bound profile's key.
+  const { requireModelProviderCredentials } = await import("./runtime-config.js");
+  requireModelProviderCredentials();
   requireDatabaseConfiguration();
 
   const { createHttpAuth, readHttpAuthenticationConfiguration } = await import(

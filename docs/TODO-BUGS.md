@@ -22,6 +22,26 @@
 - Severity: low
 - Status: open
 
+### TODO-007: post-bootstrap command points to a path the CI deploy never creates
+- Found: 2026-10-30 by doc review, `deploy/vps-setup.sh` (next step 6) and `deploy/DEPLOYMENT.md` ("Restart the model runtimes")
+- Evidence: both say `cd /opt/second-brain && SECOND_BRAIN_DEPLOY_MODE=wait-engine bash deploy/deploy.sh`, but `.github/workflows/deploy.yml` copies the script with `scp compose.yaml deploy/deploy.sh vps:/opt/second-brain/`, i.e. to `/opt/second-brain/deploy.sh`. On a registry (CI) install `deploy/deploy.sh` does not exist; it only exists in build mode (full source tree uploaded).
+- Expected / acceptance criteria:
+  - The documented command works for both install modes (e.g. CI also places it at `deploy/deploy.sh`, or docs use the path that exists in each mode).
+  - `vps-setup.sh` and `DEPLOYMENT.md` agree.
+- Severity: low
+- Status: open
+
+### TODO-008: Docker Compose does not forward the AI_* provider variables
+- Found: 2026-10-22 by P3 review, `compose.yaml` (`x-model-environment` forwards only `OPENROUTER_*` and requires `OPENROUTER_API_KEY`)
+- Evidence: registry mode (`AI_PROVIDERS`, `AI_PROVIDER_<NAME>_*`, `AI_<ROLE>`) works when the engine runs on the host (verified against `dist/runtime-config.js`) but those variables never reach the `engine`, `auth`, `admin` and `automation-worker` containers. Profile variable names are dynamic, so a fixed `environment:` list cannot cover them.
+- Expected / acceptance criteria:
+  - Registry-mode variables reach all four runtime services in a Compose deployment, without exposing unrelated secrets to services that do not need them (decide: `env_file` with an allowlist vs. a generated override file).
+  - `OPENROUTER_API_KEY` stays required for legacy installs (no setting AI_* means today's behavior) but not for registry-only installs.
+  - A deployment test covers legacy and registry mode.
+  - Legacy installs (OPENROUTER_* only) work unchanged.
+- Severity: medium (blocks provider alternation in Docker; legacy Docker installs unaffected)
+- Status: open
+
 ## Done
 
 ### TODO-001: admin deployment test asserts POSIX file mode 0600 on Windows

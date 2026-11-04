@@ -1,6 +1,6 @@
 # Plano: provedores de IA configuráveis (sem hardcode de OpenRouter)
 
-Status: **proposta para revisão** — nenhum código foi alterado.
+Status: P0, P1, P2 and **P3 shipped** (registry, per-role bindings, failover, `AI_REQUIRE_ZDR`; see section 8). P2b, P4 and P5 are pending.
 
 ## 1. Opinião
 
@@ -141,3 +141,117 @@ Consequências para o adaptador:
 ### Risco de termos do Go (decisão do usuário)
 
 A documentação do Go diz que ele é "desenhado para o OpenCode e outros agentes de código que produzem requisições semelhantes", com monitoramento de abuso, e pede que o cliente (1) envie tráfego típico de agente de código, (2) se identifique com user agent próprio e (3) envie `x-opencode-session`. O Second Brain atende 2 e 3, **mas não 1**: ingestão, dreaming e perguntas sobre memórias não são tráfego de agente de código. Risco: limitação ou suspensão da assinatura. Mitigações: volume baixo, identificação honesta, OpenRouter como reserva por papel, e a alternativa **Zen pré-pago** (mesmos preços por token; para o volume de um cérebro pessoal tende a custar centavos por mês) como caminho sem ambiguidade de termos.
+
+## 8. P3 status: provider registry and per-role bindings (shipped)
+
+### What shipped
+
+- `apps/engine/src/providers/provider-registry.ts` parses the `AI_*` environment into named provider profiles and role bindings.
+- `apps/engine/src/providers/composite-provider.ts` implements every model role interface (`EmbeddingProvider`, `AnswerProvider`, `IngestionProvider`, `DreamingProvider`, `DreamingVerificationProvider`, `BrainQuestionProvider`) and delegates each operation to the provider bound to that role. Runtime consumers are unchanged.
+- `createModelProvider` / `createConfiguredModelProvider` (`runtime-config.ts`) select the composition:
+  - **No registry variable set** (none of `AI_PROVIDERS`, `AI_EMBEDDING*`, `AI_ANSWER`, `AI_INGESTION`, `AI_DREAMING`, `AI_VERIFICATION`, `AI_PROVIDER_*`): exactly the previous `OpenRouterProvider` built from `OPENROUTER_*`. The contract test `test/contract/provider-registry-wire.test.ts` proves that the requests still match the P0 goldens. Unrelated names such as `AI_AGENT` never switch modes; empty values count as unset.
+  - **Any registry variable set**: the registry is used, `OPENROUTER_*` is ignored, and `AI_PROVIDERS` becomes mandatory.
+- `AI_REQUIRE_ZDR=true` refuses to start when the privacy level of any bound profile is not `enforced`. Only `KIND=openrouter` can be `enforced`; the legacy OpenRouter path always satisfies it.
+- The MCP HTTP entrypoint checks `OPENROUTER_API_KEY` on the legacy path, or the key of every bound profile with the registry.
+- The admin configuration store accepts the new names (see "Admin allowlist"). There is no admin UI yet (P4).
+
+### Variables
+
+| Variable | Meaning |
+|---|---|
+| `AI_PROVIDERS` | Comma list of profile names (letters and digits, case-insensitive). Only listed profiles are read; the environment is not scanned to discover profiles. |
+| `AI_PROVIDER_<NAME>_KIND` | `openrouter` or `openai-compatible`. Optional when `_PRESET` implies it. |
+| `AI_PROVIDER_<NAME>_PRESET` | `opencode-go`, `openai`, `ollama` or `openrouter`. Loads the `provider-presets.ts` defaults; explicit variables override them. |
+| `AI_PROVIDER_<NAME>_BASE_URL` | Required for `openai-compatible` without a preset. HTTPS, or HTTP on loopback only. |
+| `AI_PROVIDER_<NAME>_API_KEY` | Secret. Required for every bound profile except the `ollama` preset. |
+| `AI_PROVIDER_<NAME>_PRIVACY` | `enforced` (OpenRouter only), `attested` or `none`. Defaults: OpenRouter `enforced`, otherwise the preset value, otherwise `none`. |
+| `AI_PROVIDER_<NAME>_STRUCTURED` | `json_schema`, `json_object` or `prompt` (OpenRouter accepts only `json_schema`). |
+| `AI_PROVIDER_<NAME>_EXTRA_HEADERS` | JSON object of header names to string values. |
+| `AI_PROVIDER_<NAME>_USER_AGENT`, `_SESSION_HEADER`, `_MIN_COMPLETION_TOKENS`, `_SEND_DIMENSIONS` | OpenAI-compatible adapter options (rejected for `openrouter`). |
+| `AI_PROVIDER_<NAME>_REQUEST_TIMEOUT_MS` | Per-profile timeout, default 30000. |
+| `AI_EMBEDDING` | Exactly one `<profile>:<model>`. |
+| `AI_EMBEDDING_REVISION` | Embedding model revision, default `provider-managed`. |
+| `AI_EMBEDDING_DIMENSIONS` | Must be 1536 (the vector columns are `vector(1536)`). |
+| `AI_ANSWER` | Required. Ordered failover list `<profile>:<model>[,<profile>:<model>...]`, at most 5 entries. |
+| `AI_INGESTION`, `AI_DREAMING`, `AI_VERIFICATION` | Same format; default to `AI_ANSWER`. |
+| `AI_REQUIRE_ZDR` | `true` or `false` (default). |
+
+`AI_TRANSCRIPTION` (section 3.1) is not implemented yet; it arrives with the WhatsApp capture work.
+
+### Failover rules
+
+- A chat role tries its entries in order. It moves to the next entry only on a retryable provider condition: 429 after the adapter's own retries, any 5xx (including 503 after retries), 402 (credits or usage limit), 403 (blocked), a network failure, or a provider timeout.
+- It never fails over on 400, 401, 404 or other client errors, on malformed responses, invalid completions or validation failures, or when the caller's signal is aborted (including the caller's own deadline). When every entry fails, the classified error of the last entry is thrown.
+- The usage hook (`ModelRequestObservation`) records every attempt with its own `model`, so the entry that served is visible in the usage records. The composition also accepts an internal `onServed` callback (used by tests); nothing new is persisted.
+- Dreaming records the identity of the entry that actually served. An ingestion run stores its identity before the model call, so a failover list records the whole ordered list (for example provider `opencode-go,openrouter`, model `deepseek-v4.1-flash,deepseek/deepseek-v4-flash`); a single entry records itself.
+- **Embeddings never fail over**, and `AI_EMBEDDING` rejects a list at startup: vectors from different models must never mix in one embedding space.
+
+### Fail-closed startup errors
+
+Every case below raises an `EngineStartupError` that names the variable and never prints a secret value:
+
+- registry variables without `AI_PROVIDERS`;
+- an unknown profile in a binding;
+- a missing key for a bound profile (validated runtimes only; the lenient composition defers it to the first call, like the legacy path);
+- an `AI_EMBEDDING` list, or dimensions other than 1536;
+- an unknown preset, kind, privacy level or structured output mode, or a kind that contradicts the preset;
+- `PRIVACY=enforced` on a non-OpenRouter profile, or OpenAI-compatible-only settings on an OpenRouter profile;
+- malformed numbers, booleans or JSON;
+- settings for an unlisted profile or with an unknown suffix (typos);
+- malformed, empty, repeated or too many list entries;
+- `AI_REQUIRE_ZDR=true` with any bound profile that is not `enforced`;
+- adapter validation failures, for example a reserved extra header or a plain-HTTP remote base URL.
+
+### Example: OpenRouter only
+
+Nothing changes for existing installs: keep the `OPENROUTER_*` variables and set no `AI_*` variable. The equivalent registry form keeps the same embedding identity (`openrouter`):
+
+```
+AI_PROVIDERS=or
+AI_PROVIDER_OR_KIND=openrouter
+AI_PROVIDER_OR_API_KEY=<key>
+AI_EMBEDDING=or:google/gemini-embedding-001
+AI_EMBEDDING_REVISION=provider-managed
+AI_ANSWER=or:deepseek/deepseek-v4-flash
+```
+
+### Example: OpenCode Go for chat, OpenRouter for embeddings and failover
+
+```
+AI_PROVIDERS=go,or
+AI_PROVIDER_GO_PRESET=opencode-go
+AI_PROVIDER_GO_API_KEY=<opencode key>
+AI_PROVIDER_OR_KIND=openrouter
+AI_PROVIDER_OR_API_KEY=<openrouter key>
+AI_EMBEDDING=or:google/gemini-embedding-001
+AI_EMBEDDING_REVISION=provider-managed
+AI_ANSWER=go:deepseek-v4.1-flash,or:deepseek/deepseek-v4-flash
+# AI_INGESTION, AI_DREAMING and AI_VERIFICATION default to AI_ANSWER.
+```
+
+`AI_REQUIRE_ZDR=true` refuses this setup, because the Go profile is `attested`, not `enforced`.
+
+### Embedding-space warning
+
+The embedding identity comes only from the `AI_EMBEDDING` profile: `provider + model + revision + dimensions`. When you switch an existing install to the registry, keep `AI_EMBEDDING` on the same OpenRouter model and revision as the current `OPENROUTER_EMBEDDING_MODEL` and `OPENROUTER_EMBEDDING_MODEL_REVISION`. The provider id stays `openrouter`, so the existing embedding spaces still match. Any other value (another model, revision or provider, for example `openai` or `ollama`) makes startup refuse the active embedding spaces and requires the re-embedding cycle (section 3.4, phase P5).
+
+### Admin allowlist
+
+`environment-configuration.ts` keeps the fixed `OPENROUTER_*` catalog. It also accepts `AI_PROVIDERS`, `AI_ANSWER`, `AI_INGESTION`, `AI_DREAMING`, `AI_VERIFICATION`, and `AI_PROVIDER_<NAME>_<SUFFIX>` for every suffix except `BASE_URL`. `_API_KEY` values are encrypted secrets. Registry settings are listed only after they are stored.
+
+Like `OPENROUTER_BASE_URL` and `OPENROUTER_EMBEDDING_MODEL`, these names stay operator-only (environment):
+
+- `AI_PROVIDER_<NAME>_BASE_URL`, so that a stored override cannot send a configured key to another endpoint;
+- `AI_EMBEDDING*`, the embedding identity;
+- `AI_REQUIRE_ZDR`, the privacy policy.
+
+### Model configuration (admin probe and catalog)
+
+- The catalog (`models()`) stays OpenRouter-specific (`/endpoints/zdr`).
+- With the registry, `probe()` accepts `<profile>:<model>` to test a model on that profile; a bare model is probed on the primary profile of `AI_ANSWER`. `status()` reports whether every bound profile has a key and lists the role bindings as `profile:model` lists.
+
+### Known gaps
+
+- `compose.yaml` forwards only the `OPENROUTER_*` variables (and requires `OPENROUTER_API_KEY`). Compose deployments need the `AI_*` variables added to the service environment before they can use the registry. P3 does not change or verify this (no Docker run).
+- There is no admin UI for profiles or roles (P4); the admin panel copy still talks about OpenRouter.
+- The registry does not expose the `opencode-zen` preset (only OpenCode Go is in scope). Qwen and MiniMax on Go still need the `anthropic` adapter (P2b).
