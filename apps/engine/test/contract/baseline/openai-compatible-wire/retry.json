@@ -1,0 +1,276 @@
+{
+  "retryAfterSeconds": {
+    "sleeps": [
+      2000
+    ],
+    "requests": 2,
+    "outcome": {
+      "result": {
+        "answer": "PostgreSQL [1].",
+        "answerable": true,
+        "citationIndexes": [
+          1
+        ]
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ]
+  },
+  "retryAfterHttpDate": {
+    "sleeps": [
+      5000
+    ],
+    "requests": 2,
+    "outcome": {
+      "result": {
+        "answer": "PostgreSQL [1].",
+        "answerable": true,
+        "citationIndexes": [
+          1
+        ]
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ]
+  },
+  "retryAfterCapped": {
+    "sleeps": [
+      10000
+    ],
+    "requests": 2,
+    "outcome": {
+      "result": {
+        "answer": "PostgreSQL [1].",
+        "answerable": true,
+        "citationIndexes": [
+          1
+        ]
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ]
+  },
+  "retryAfterInvalidUsesBackoff": {
+    "sleeps": [
+      1000,
+      2000
+    ],
+    "requests": 3,
+    "outcome": {
+      "result": {
+        "answer": "PostgreSQL [1].",
+        "answerable": true,
+        "citationIndexes": [
+          1
+        ]
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ]
+  },
+  "retryAfterBeyondTimeout": {
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go rate or usage limit was reached (status 429).",
+        "fields": {
+          "status": 429,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_RATE_LIMITED",
+          "reason": "rate_limit",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "rate_limit"
+      }
+    ]
+  },
+  "exhausted": {
+    "sleeps": [
+      1000,
+      1000
+    ],
+    "requests": 3,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go rate or usage limit was reached (status 429) after 3 attempts.",
+        "fields": {
+          "status": 429,
+          "attempts": 3,
+          "code": "OPENAI_COMPATIBLE_RATE_LIMITED",
+          "reason": "rate_limit",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "rate_limit"
+      }
+    ]
+  },
+  "unavailableExhausted": {
+    "sleeps": [
+      1000,
+      2000
+    ],
+    "requests": 3,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go model or endpoint is unavailable (status 503) after 3 attempts.",
+        "fields": {
+          "status": 503,
+          "attempts": 3,
+          "code": "OPENAI_COMPATIBLE_REQUEST_FAILED",
+          "reason": "unavailable",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unavailable"
+      }
+    ]
+  },
+  "retryDisabled": {
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go rate or usage limit was reached (status 429).",
+        "fields": {
+          "status": 429,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_RATE_LIMITED",
+          "reason": "rate_limit",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "rate_limit"
+      }
+    ]
+  },
+  "singleAttemptPolicy": {
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go rate or usage limit was reached (status 429).",
+        "fields": {
+          "status": 429,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_RATE_LIMITED",
+          "reason": "rate_limit",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "rate_limit"
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+[
+  {
+    "status": 400,
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go request failed with status 400.",
+        "fields": {
+          "status": 400,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_REQUEST_FAILED",
+          "reason": "unknown",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    }
+  },
+  {
+    "status": 401,
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go API key was rejected (status 401).",
+        "fields": {
+          "status": 401,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_AUTHENTICATION_FAILED",
+          "reason": "authentication",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    }
+  },
+  {
+    "status": 402,
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go account has insufficient funds or reached its usage limit (status 402).",
+        "fields": {
+          "status": 402,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_INSUFFICIENT_FUNDS",
+          "reason": "credits",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    }
+  },
+  {
+    "status": 403,
+    "sleeps": [],
+    "requests": 1,
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go request was refused (status 403).",
+        "fields": {
+          "status": 403,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_BLOCKED",
+          "reason": "authentication",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    }
+  }
+]

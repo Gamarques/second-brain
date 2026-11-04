@@ -1,0 +1,213 @@
+{
+  "answerSchema": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "The knowledge answer model returned an invalid structured answer.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      },
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 2
+  },
+  "verificationSchema": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "The verification model returned an invalid structured result.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "verification",
+        "model": "test/verification-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      },
+      {
+        "operation": "verification",
+        "model": "test/verification-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 2
+  },
+  "dreamingJson": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "The dreaming model returned malformed JSON.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "dreaming",
+        "model": "test/dreaming-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      },
+      {
+        "operation": "dreaming",
+        "model": "test/dreaming-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 2
+  },
+  "probe": {
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleTransportError",
+        "name": "OpenAICompatibleTransportError",
+        "message": "The configuration probe returned an invalid completion.",
+        "fields": {
+          "reason": "malformed",
+          "name": "OpenAICompatibleTransportError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 2
+  },
+  "truncatedIsNotRepaired": {
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleTransportError",
+        "name": "OpenAICompatibleTransportError",
+        "message": "The configuration probe returned an invalid completion.",
+        "fields": {
+          "reason": "malformed",
+          "name": "OpenAICompatibleTransportError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "repairRequestFails": {
+    "outcome": {
+      "error": {
+        "kind": "OpenAICompatibleRequestError",
+        "name": "OpenAICompatibleRequestError",
+        "message": "The OpenCode Go API key was rejected (status 401).",
+        "fields": {
+          "status": 401,
+          "attempts": 1,
+          "code": "OPENAI_COMPATIBLE_AUTHENTICATION_FAILED",
+          "reason": "authentication",
+          "name": "OpenAICompatibleRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      },
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 2
+  }
+}

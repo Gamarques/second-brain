@@ -369,6 +369,77 @@ interface ParsedCompletion {
   readonly usage: { readonly inputTokens: number; readonly outputTokens: number } | null;
 }
 
+type ChatMessage = { readonly role: "system" | "user"; readonly content: string };
+
+interface StructuredDecoding<T> {
+  readonly kind: CompletionKind;
+  readonly requireUsage: boolean;
+  /** Null when the payload is only parsed here and validated by the caller's domain. */
+  readonly schema: z.ZodType<T> | null;
+  /** Error message when the payload does not match `schema`. */
+  readonly invalid: string;
+  /** Maps completion and decoding failures, for example to a probe transport error. */
+  readonly failure?: (error: unknown) => unknown;
+}
+
+type Decoded<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly problem: string; readonly error: Error };
+
+const NEVER_RETRIED_STATUSES = new Set([400, 401, 402, 403]);
+const HTTP_DATE = /^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/u;
+
+function retryAfterMs(value: string | null): number | null {
+  const trimmed = value?.trim() ?? "";
+  if (/^\d+$/u.test(trimmed)) return Number(trimmed) * 1_000;
+  if (!HTTP_DATE.test(trimmed)) return null;
+  const date = Date.parse(trimmed);
+  return Number.isNaN(date) ? null : Math.max(0, date - Date.now());
+}
+
+/** The `error.message` of a JSON error body, or empty when the body is absent or not JSON. */
+function providerErrorMessage(body: string): string {
+  try {
+    const payload = JSON.parse(body) as { error?: { message?: unknown } } | null;
+    return typeof payload?.error?.message === "string" ? payload.error.message : "";
+  } catch {
+    return "";
+  }
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/** Removes one Markdown code fence around the whole reply, which prompt-only models often add. */
+function unfenced(text: string): string {
+  const match = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/u.exec(text);
+  return match === null ? text : match[1]!.trim();
+}
+
+/** Validation summary for a repair request: issue paths and messages, never the rejected values. */
+function issueSummary(issues: readonly z.core.$ZodIssue[]): string {
+  const summary = issues
+    .slice(0, 5)
+    .map((issue) => `${issue.path.length === 0 ? "(root)" : issue.path.map(String).join(".")}: ${issue.message}`)
+    .join("; ");
+  return summary.length > 500 ? `${summary.slice(0, 497)}...` : summary;
+}
+
 export interface ModelProviderOptions {
   readonly observeRequest?: ModelRequestObserver;
   readonly embeddingModel: string;
@@ -389,14 +460,6 @@ function requireNonBlank(value: string | undefined, message: string): string {
 function positiveInteger(value: number, message: string): number {
   if (!Number.isInteger(value) || value <= 0) throw new Error(message);
   return value;
-}
-
-function parseJson(text: string, kind: CompletionKind): unknown {
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    throw new Error(`The ${kind} model returned malformed JSON.`);
-  }
 }
 
 function validateGrounding(
@@ -495,18 +558,41 @@ export class ModelProvider
     return `${this.name} request timeout must be a positive integer.`;
   }
 
+  /** Undefined in prompt mode, which JSON serialization then omits from the body. */
   private responseFormat(name: string, schema: unknown) {
     switch (this.adapter.structuredOutput) {
       case "json_schema":
         return { type: "json_schema", json_schema: { name, strict: true, schema } } as const;
+      case "json_object":
+        return { type: "json_object" } as const;
+      case "prompt":
+        return undefined;
     }
+  }
+
+  /** Describes the schema in the prompt when the response format does not enforce it. */
+  private structuredMessages(
+    messages: readonly ChatMessage[],
+    name: string,
+    schema: unknown,
+  ): readonly ChatMessage[] {
+    if (this.adapter.structuredOutput === "json_schema") return messages;
+    const instruction = `Respond with one JSON object only, without prose or code fences. It must match this JSON Schema named "${name}": ${JSON.stringify(schema)}`;
+    const [first, ...rest] = messages;
+    return first?.role === "system"
+      ? [{ role: "system", content: `${first.content}\n\n${instruction}` }, ...rest]
+      : [{ role: "system", content: instruction }, ...messages];
+  }
+
+  private maxTokens(requested: number): number {
+    return this.adapter.completionTokens?.(requested) ?? requested;
   }
 
   /** Request body shared by every structured chat completion. */
   private chatRequest(
     context: Pick<ModelRequestContext, "operation" | "auditedUsage">,
     model: string,
-    messages: readonly { readonly role: "system" | "user"; readonly content: string }[],
+    messages: readonly ChatMessage[],
     schemaName: string,
     schema: unknown,
     maxTokens: number,
@@ -514,13 +600,104 @@ export class ModelProvider
     const extras = this.adapter.requestExtras({ ...context, structured: true });
     return {
       model,
-      messages,
+      messages: this.structuredMessages(messages, schemaName, schema),
       response_format: this.responseFormat(schemaName, schema),
       ...extras.generation,
       temperature: 0,
-      max_tokens: maxTokens,
+      max_tokens: this.maxTokens(maxTokens),
       ...extras.trailing,
     };
+  }
+
+  private decode<T>(text: string, decoding: StructuredDecoding<T>): Decoded<T> {
+    let value: unknown;
+    try {
+      value = JSON.parse(this.adapter.structuredOutput === "json_schema" ? text : unfenced(text)) as unknown;
+    } catch {
+      return {
+        ok: false,
+        problem: "the reply was not valid JSON",
+        error: new Error(`The ${decoding.kind} model returned malformed JSON.`),
+      };
+    }
+    if (decoding.schema === null) return { ok: true, value: value as T };
+    const parsed = decoding.schema.safeParse(value);
+    return parsed.success
+      ? { ok: true, value: parsed.data }
+      : { ok: false, problem: issueSummary(parsed.error.issues), error: new Error(decoding.invalid) };
+  }
+
+  /**
+   * Posts a structured chat completion and decodes its JSON. Strict JSON
+   * Schema mode fails on the first invalid reply; the weaker modes send one
+   * repair request carrying only the validation summary before failing with
+   * the same error.
+   */
+  private async structuredChat<T, B extends { readonly model: string; readonly messages: readonly ChatMessage[] }>(
+    operation: ModelOperation,
+    body: B,
+    decoding: StructuredDecoding<T>,
+    signal: AbortSignal,
+    timeoutMs?: number,
+  ): Promise<{ readonly value: T; readonly completion: ParsedCompletion }> {
+    const attempt = async (request: B) => {
+      const response = await this.postJson(operation, "/chat/completions", request, signal, timeoutMs);
+      try {
+        const completion = this.parseCompletion(response, decoding.kind, decoding.requireUsage);
+        return { completion, decoded: this.decode(completion.text, decoding) };
+      } catch (error) {
+        throw decoding.failure === undefined ? error : decoding.failure(error);
+      }
+    };
+    const unwrap = (decoded: Decoded<T>): T => {
+      if (decoded.ok) return decoded.value;
+      throw decoding.failure === undefined ? decoded.error : decoding.failure(decoded.error);
+    };
+
+    const first = await attempt(body);
+    const decoded = first.decoded;
+    if (decoded.ok || this.adapter.structuredOutput === "json_schema") {
+      return { value: unwrap(decoded), completion: first.completion };
+    }
+    const repaired = await attempt({
+      ...body,
+      messages: [
+        ...body.messages,
+        {
+          role: "user",
+          content: `Your previous reply did not match the required JSON structure (${decoded.problem}). Reply again with only the corrected JSON object.`,
+        },
+      ],
+    } as B);
+    const firstUsage = first.completion.usage;
+    const repairedUsage = repaired.completion.usage;
+    return {
+      value: unwrap(repaired.decoded),
+      completion: {
+        text: repaired.completion.text,
+        usage:
+          firstUsage === null || repairedUsage === null
+            ? repairedUsage
+            : {
+                inputTokens: firstUsage.inputTokens + repairedUsage.inputTokens,
+                outputTokens: firstUsage.outputTokens + repairedUsage.outputTokens,
+              },
+      },
+    };
+  }
+
+  /** Delay before retrying a failed attempt, or null when the request must fail now. */
+  private retryDelay(response: Response, attempt: number, startedAt: number, timeoutMs: number): number | null {
+    const policy = this.adapter.retryPolicy;
+    if (policy === undefined || attempt >= policy.maxAttempts) return null;
+    if (NEVER_RETRIED_STATUSES.has(response.status) || !policy.retryableStatuses.includes(response.status)) {
+      return null;
+    }
+    const delay = Math.min(
+      policy.maxDelayMs,
+      retryAfterMs(response.headers.get("retry-after")) ?? policy.baseDelayMs * 2 ** (attempt - 1),
+    );
+    return Date.now() - startedAt + delay < timeoutMs ? delay : null;
   }
 
   private parseCompletion(
@@ -596,26 +773,37 @@ export class ModelProvider
       if (!hasCredential) errorReason = "authentication";
       const headers = this.adapter.headers();
       let response: Response;
-      try {
-        response = await fetch(`${this.adapter.baseUrl}${path}`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: timeoutController.signal,
-        });
-      } catch {
-        errorReason = signal.aborted ? "canceled" : timeoutController.signal.aborted ? "timeout" : hasCredential ? "network" : "authentication";
-        if (signal.aborted) throw signal.reason;
-        if (timeoutController.signal.aborted) {
-          throw this.adapter.transportError(`The ${this.name} request timed out.`, "timeout");
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          response = await fetch(`${this.adapter.baseUrl}${path}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal: timeoutController.signal,
+          });
+        } catch {
+          errorReason = signal.aborted ? "canceled" : timeoutController.signal.aborted ? "timeout" : hasCredential ? "network" : "authentication";
+          if (signal.aborted) throw signal.reason;
+          if (timeoutController.signal.aborted) {
+            throw this.adapter.transportError(`The ${this.name} request timed out.`, "timeout");
+          }
+          throw this.adapter.transportError(`The ${this.name} request could not be completed.`, "network");
         }
-        throw this.adapter.transportError(`The ${this.name} request could not be completed.`, "network");
-      }
+        if (response.ok) break;
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null) as { error?: { message?: unknown } } | null;
-        const message = typeof payload?.error?.message === "string" ? payload.error.message : "";
-        const failure = this.adapter.requestError(response.status, message);
+        const errorBody = await response.text().catch(() => "");
+        const delay = this.retryDelay(response, attempt, startedAt, timeoutMs);
+        if (delay !== null) {
+          try {
+            await (this.adapter.retryPolicy?.sleep ?? sleep)(delay, timeoutController.signal);
+          } catch {
+            if (signal.aborted) throw signal.reason;
+            throw this.adapter.transportError(`The ${this.name} request timed out.`, "timeout");
+          }
+          continue;
+        }
+        const message = providerErrorMessage(errorBody);
+        const failure = this.adapter.requestError(response.status, message, { body: errorBody, attempts: attempt });
         requestFailureReason = failure.reason;
         throw failure;
       }
@@ -656,19 +844,21 @@ export class ModelProvider
   /** Exercises the same structured-output and privacy routing used by Dreaming. */
   async probe(model: string, signal: AbortSignal): Promise<{ ok: true }> {
     const extras = this.adapter.requestExtras({ operation: "diagnostic", structured: true, auditedUsage: false });
-    const payload = await this.postJson("diagnostic", "/chat/completions", {
+    const schema = { type: "object", properties: { ok: { type: "boolean", enum: [true] } }, required: ["ok"], additionalProperties: false };
+    const { value } = await this.structuredChat("diagnostic", {
       model,
-      messages: [{ role: "user", content: 'Return {"ok":true}.' }],
-      max_tokens: 128,
+      messages: this.structuredMessages([{ role: "user", content: 'Return {"ok":true}.' }], "configuration_probe", schema),
+      max_tokens: this.maxTokens(128),
       ...extras.trailing,
-      response_format: this.responseFormat("configuration_probe", { type: "object", properties: { ok: { type: "boolean", enum: [true] } }, required: ["ok"], additionalProperties: false }),
+      response_format: this.responseFormat("configuration_probe", schema),
+    }, {
+      kind: "dreaming",
+      requireUsage: false,
+      schema: z.object({ ok: z.literal(true) }),
+      invalid: "The configuration probe returned an invalid completion.",
+      failure: () => this.adapter.transportError("The configuration probe returned an invalid completion.", "malformed"),
     }, signal);
-    try {
-      const completion = this.parseCompletion(payload, "dreaming", false);
-      return z.object({ ok: z.literal(true) }).parse(JSON.parse(completion.text));
-    } catch {
-      throw this.adapter.transportError("The configuration probe returned an invalid completion.", "malformed");
-    }
+    return value;
   }
 
   async embed(
@@ -686,7 +876,7 @@ export class ModelProvider
         input: texts,
         ...extras.input,
         encoding_format: "float",
-        dimensions: this.dimensions,
+        ...(this.adapter.sendsEmbeddingDimensions === false ? {} : { dimensions: this.dimensions }),
         ...extras.trailing,
       },
       signal,
@@ -728,9 +918,8 @@ export class ModelProvider
     },
     signal: AbortSignal,
   ): Promise<string> {
-    const response = await this.postJson(
+    const { value } = await this.structuredChat(
       "knowledge_ask",
-      "/chat/completions",
       this.chatRequest(
         { operation: "knowledge_ask", auditedUsage: false },
         this.answerModel,
@@ -756,15 +945,16 @@ export class ModelProvider
         groundedAnswerJsonSchema,
         600,
       ),
+      {
+        kind: "answer",
+        requireUsage: false,
+        schema: groundedAnswerSchema,
+        invalid: "The knowledge answer model returned an invalid structured answer.",
+      },
       signal,
     );
-    const completion = this.parseCompletion(response, "answer", false);
-    const parsed = groundedAnswerSchema.safeParse(parseJson(completion.text, "answer"));
-    if (!parsed.success) {
-      throw new Error("The knowledge answer model returned an invalid structured answer.");
-    }
     const grounded = validateGrounding(
-      parsed.data,
+      value,
       input.contexts.length,
       "knowledge answer",
     );
@@ -772,7 +962,7 @@ export class ModelProvider
   }
 
   async answerAcrossBrain(input: Parameters<BrainQuestionProvider["answerAcrossBrain"]>[0], signal: AbortSignal): Promise<ReasonedAnswer> {
-    const response = await this.postJson("brain_ask", "/chat/completions", this.chatRequest(
+    const { value } = await this.structuredChat("brain_ask", this.chatRequest(
       { operation: "brain_ask", auditedUsage: false },
       this.answerModel,
       [
@@ -782,11 +972,8 @@ export class ModelProvider
       "grounded_brain_workspace_answer",
       groundedAnswerJsonSchema,
       1200,
-    ), signal);
-    const completion = this.parseCompletion(response, "reasoning", false);
-    const parsed = groundedAnswerSchema.safeParse(parseJson(completion.text, "reasoning"));
-    if (!parsed.success) throw new Error("The answer model returned an invalid structured answer.");
-    return validateGrounding(parsed.data, input.evidence.length, "reasoning");
+    ), { kind: "reasoning", requireUsage: false, schema: groundedAnswerSchema, invalid: "The answer model returned an invalid structured answer." }, signal);
+    return validateGrounding(value, input.evidence.length, "reasoning");
   }
 
   async reason(
@@ -800,9 +987,8 @@ export class ModelProvider
     },
     signal: AbortSignal,
   ): Promise<ReasonedAnswer> {
-    const response = await this.postJson(
+    const { value } = await this.structuredChat(
       "brain_ask",
-      "/chat/completions",
       this.chatRequest(
         { operation: "brain_ask", auditedUsage: false },
         this.answerModel,
@@ -838,14 +1024,15 @@ Rules:
         groundedAnswerJsonSchema,
         900,
       ),
+      {
+        kind: "reasoning",
+        requireUsage: false,
+        schema: groundedAnswerSchema,
+        invalid: "The reasoning model returned an invalid structured answer.",
+      },
       signal,
     );
-    const completion = this.parseCompletion(response, "reasoning", false);
-    const parsed = groundedAnswerSchema.safeParse(parseJson(completion.text, "reasoning"));
-    if (!parsed.success) {
-      throw new Error("The reasoning model returned an invalid structured answer.");
-    }
-    return validateGrounding(parsed.data, input.evidence.length, "reasoning");
+    return validateGrounding(value, input.evidence.length, "reasoning");
   }
 
   async propose(
@@ -857,9 +1044,8 @@ Rules:
     },
     signal: AbortSignal,
   ): Promise<IngestionModelResult> {
-    const response = await this.postJson(
+    const { value, completion } = await this.structuredChat(
       "ingestion",
-      "/chat/completions",
       this.chatRequest(
         { operation: "ingestion", auditedUsage: true },
         this.ingestionModel,
@@ -879,14 +1065,10 @@ For every proposal, copy one exact nonempty source quote and its zero-based Java
         ingestionProposalsJsonSchema,
         4_000,
       ),
+      { kind: "ingestion", requireUsage: true, schema: null, invalid: "The ingestion model returned malformed JSON." },
       signal,
     );
-    const completion = this.parseCompletion(response, "ingestion", true);
-    return this.auditedResult(
-      parseJson(completion.text, "ingestion"),
-      this.ingestionModel,
-      completion,
-    );
+    return this.auditedResult(value, this.ingestionModel, completion);
   }
 
   async createPlan(
@@ -940,9 +1122,8 @@ For every proposal, copy one exact nonempty source quote and its zero-based Java
       throw new Error("The serialized dreaming prompt exceeds 50,000 characters.");
     }
 
-    const response = await this.postJson(
+    const { value, completion } = await this.structuredChat(
       "dreaming",
-      "/chat/completions",
       this.chatRequest(
         { operation: "dreaming", auditedUsage: true },
         this.dreamingModel,
@@ -959,15 +1140,11 @@ Produce a compact summary, at most ten cited insights, and at most twenty memory
         dreamingPlanJsonSchema,
         limits.maxOutputTokens,
       ),
+      { kind: "dreaming", requireUsage: true, schema: null, invalid: "The dreaming model returned malformed JSON." },
       signal,
       limits.timeoutMs,
     );
-    const completion = this.parseCompletion(response, "dreaming", true);
-    return this.auditedResult(
-      parseJson(completion.text, "dreaming"),
-      this.dreamingModel,
-      completion,
-    );
+    return this.auditedResult(value, this.dreamingModel, completion);
   }
 
   async verifyUpdates(
@@ -990,9 +1167,8 @@ Produce a compact summary, at most ten cited insights, and at most twenty memory
     if (changes.length > 20) {
       throw new Error("Dreaming verification is limited to 20 updates.");
     }
-    const response = await this.postJson(
+    const { value } = await this.structuredChat(
       "verification",
-      "/chat/completions",
       this.chatRequest(
         { operation: "verification", auditedUsage: false },
         this.verificationModel,
@@ -1025,21 +1201,20 @@ Produce a compact summary, at most ten cited insights, and at most twenty memory
         dreamingVerificationJsonSchema,
         Math.min(2_000, 150 + changes.length * 100),
       ),
+      {
+        kind: "verification",
+        requireUsage: false,
+        schema: verificationPayloadSchema,
+        invalid: "The verification model returned an invalid structured result.",
+      },
       signal,
     );
-    const completion = this.parseCompletion(response, "verification", false);
-    const parsed = verificationPayloadSchema.safeParse(
-      parseJson(completion.text, "verification"),
-    );
-    if (!parsed.success) {
-      throw new Error("The verification model returned an invalid structured result.");
-    }
-    if (parsed.data.results.length !== changes.length) {
+    if (value.results.length !== changes.length) {
       throw new Error(
-        `${this.name} returned ${parsed.data.results.length} verification results for ${changes.length} updates.`,
+        `${this.name} returned ${value.results.length} verification results for ${changes.length} updates.`,
       );
     }
-    parsed.data.results.forEach((result, index) => {
+    value.results.forEach((result, index) => {
       if (new Set(result.quoteIndexes).size !== result.quoteIndexes.length) {
         throw new Error("The verification model returned duplicate quote indexes.");
       }
@@ -1048,6 +1223,6 @@ Produce a compact summary, at most ten cited insights, and at most twenty memory
         throw new Error("The verification model returned an out-of-range quote index.");
       }
     });
-    return parsed.data.results;
+    return value.results;
   }
 }

@@ -1,0 +1,48 @@
+{
+  "requests": [
+    {
+      "max_tokens": 1024,
+      "reasoning": {
+        "enabled": false
+      },
+      "reasoning_effort": "low"
+    },
+    {
+      "max_tokens": 1800,
+      "reasoning": {
+        "enabled": false
+      },
+      "reasoning_effort": "low"
+    },
+    {
+      "max_tokens": null,
+      "reasoning": null,
+      "reasoning_effort": null
+    }
+  ],
+  "outcome": {
+    "probe": {
+      "result": {
+        "ok": true
+      }
+    },
+    "reason": {
+      "result": {
+        "answer": "PostgreSQL [1].",
+        "answerable": true,
+        "citationIndexes": [
+          1
+        ]
+      }
+    },
+    "embed": {
+      "result": [
+        [
+          1,
+          0,
+          0
+        ]
+      ]
+    }
+  }
+}

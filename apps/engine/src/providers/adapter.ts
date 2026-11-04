@@ -2,10 +2,35 @@ import type { EmbeddingInputType } from "../domain.js";
 import type { ModelFailureReason, ModelOperation } from "../domain/model-usage.js";
 
 /**
- * How a provider is asked for structured JSON output. Only strict JSON Schema
- * response formats are supported today.
+ * How a provider is asked for structured JSON output, in degradation order:
+ * a strict JSON Schema response format, a plain JSON object response format,
+ * or prompt instructions only. The two weaker modes describe the schema in
+ * the prompt and allow one repair request when validation fails.
  */
-export type StructuredOutputMode = "json_schema";
+export type StructuredOutputMode = "json_schema" | "json_object" | "prompt";
+
+/**
+ * Retry policy for transient HTTP statuses. Retries never exceed the request
+ * timeout or outlive the caller's abort signal, and 400, 401, 402, and 403
+ * are never retried whatever the policy lists.
+ */
+export interface ModelRetryPolicy {
+  /** Total attempts, including the first request. */
+  readonly maxAttempts: number;
+  readonly retryableStatuses: readonly number[];
+  /** Exponential backoff base when the response carries no Retry-After. */
+  readonly baseDelayMs: number;
+  /** Upper bound for any single wait, including a Retry-After value. */
+  readonly maxDelayMs: number;
+  /** Injectable wait used between attempts; rejects with the signal reason on abort. */
+  readonly sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
+}
+
+/** Raw failure details handed to `requestError`; never surfaced to callers. */
+export interface ModelRequestFailure {
+  readonly body: string;
+  readonly attempts: number;
+}
 
 export interface ModelRequestUsage {
   readonly inputTokens: number | null;
@@ -62,10 +87,16 @@ export interface ModelProviderAdapter {
   /** Reported usage and cost from a successful response, or null when absent or malformed. */
   extractUsage(payload: unknown): ModelRequestUsage | null;
   /** Error for a non-success HTTP status; `errorMessage` is the provider message, never surfaced. */
-  requestError(status: number, errorMessage: string): ModelProviderRequestError;
+  requestError(status: number, errorMessage: string, failure: ModelRequestFailure): ModelProviderRequestError;
   transportError(message: string, reason: "timeout" | "network" | "malformed"): Error;
   /** Optional advisory catalog of models usable with structured output. */
   listModels?(signal: AbortSignal): Promise<readonly ModelCatalogEntry[]>;
+  /** Retry policy for transient statuses; absent means a single attempt. */
+  readonly retryPolicy?: ModelRetryPolicy | undefined;
+  /** Whether embedding requests carry `dimensions`; absent means true. */
+  readonly sendsEmbeddingDimensions?: boolean;
+  /** Chat `max_tokens` for an operation's budget, for example room for reasoning tokens; absent keeps the budget. */
+  completionTokens?(requested: number): number;
 }
 
 export function normalizeBaseUrl(value: string, displayName: string): string {
