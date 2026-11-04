@@ -42,6 +42,16 @@
 - Severity: medium (blocks provider alternation in Docker; legacy Docker installs unaffected)
 - Status: open
 
+### TODO-009: first `npm run dev` on a fresh database prints a failure and skips the next-step hint
+- Found: 2026-11-04 by the user's first local run (screenshot of the terminal), `tools/local-dev.mjs` (`up`, lines ~166-196)
+- Evidence: with an empty database `docker compose up --detach --build` ends with `Container ...-engine-1 Error dependency engine failed to start` / `...-admin-1 ... failed to start` / `dependency failed to start: container second-brain-dev-engine-1 is unhealthy`, then `The local Docker Compose command failed.` and exit 1. engine/admin/worker log "Active embedding spaces are missing... Bootstrap the owner account before the engine can start." which is expected until `npm run dev:bootstrap` runs. `runCompose` aborts via `fail()` before the hint "finish the one-time owner setup with npm run dev:bootstrap" is printed.
+- Expected / acceptance criteria:
+  - On a fresh database the command explains that the failure is the expected "owner not created yet" state and prints the exact next command (`npm run dev:bootstrap`) before exiting, or exits 0 with that hint.
+  - Real failures (build error, postgres unhealthy, migration failure) still exit non-zero with the original message.
+  - A test or manual check covers fresh-database and already-bootstrapped runs.
+- Severity: low (confusing first-run UX, no functional defect)
+- Status: open
+
 ## Done
 
 ### TODO-001: admin deployment test asserts POSIX file mode 0600 on Windows
