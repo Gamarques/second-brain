@@ -21,7 +21,7 @@ permissions:
 jobs:
   check:
     # Skipped on a rollback dispatch — the requested image already exists.
-    if: github.event_name == 'push' || inputs.image_tag == ''
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'push' || inputs.image_tag == '') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +32,7 @@ jobs:
 
   build:
     needs: check
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +60,7 @@ jobs:
     needs: [check, build]
     # Run when nothing failed, including when check/build were skipped
     # because a rollback dispatch requested an existing image tag.
-    if: ${{ !cancelled() && needs.check.result != 'failure' && needs.build.result != 'failure' }}
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && !cancelled() && needs.check.result != 'failure' && needs.build.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Validate rollback commit SHA
@@ -75,6 +76,14 @@ jobs:
         with:
           # Compose and deploy.sh are an immutable part of the image contract.
           ref: ${{ inputs.image_tag || github.sha }}
+      - name: Connect to Tailscale
+        # The VPS keeps public port 22 closed; SSH goes over the tailnet.
+        # VPS_HOST must be the 100.x address or MagicDNS name, not the public IP.
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
