@@ -2,7 +2,55 @@
 
 ## Open
 
-(none)
+### TODO-005: Deploy workflow fails on every push to main when no VPS is configured
+- Found: 2026-10-22 by GitHub Actions run 39830628333 (Deploy) after merging PR #1, `.github/workflows/deploy.yml`
+- Evidence: `/home/runner/.ssh/config line 2: no argument after keyword "hostname"` then exit 255 (secrets VPS_HOST / VPS_USER / VPS_SSH_KEY are unset)
+- Expected / acceptance criteria:
+  - Deploy is skipped (not failed) while `vars.DEPLOY_ENABLED != 'true'`, and runs normally when it is set.
+  - No change to the production deploy steps themselves.
+  - Documented in `docs/plano-branches-e-ambientes.md` section 4.
+- Severity: low (noise now, becomes production deploy once a VPS exists)
+- Status: open
+
+### TODO-006: release-please cannot open its release PR
+- Found: 2026-10-22 by GitHub Actions run 39833325177 (Release), `.github/workflows/release.yml`
+- Evidence: `release-please failed: GitHub Actions is not permitted to create or approve pull requests`; it left the branch `release-please--branches--main--components--second-brain` behind.
+- Expected / acceptance criteria:
+  - Repo setting "Allow GitHub Actions to create and approve pull requests" enabled (Settings -> Actions -> General), or a PAT configured for release-please.
+  - Re-running the Release workflow on main opens a release PR instead of failing.
+  - The orphan branch is reused by release-please or deleted.
+- Severity: low
+- Status: open
+
+### TODO-007: post-bootstrap command points to a path the CI deploy never creates
+- Found: 2026-10-30 by doc review, `deploy/vps-setup.sh` (next step 6) and `deploy/DEPLOYMENT.md` ("Restart the model runtimes")
+- Evidence: both say `cd /opt/second-brain && SECOND_BRAIN_DEPLOY_MODE=wait-engine bash deploy/deploy.sh`, but `.github/workflows/deploy.yml` copies the script with `scp compose.yaml deploy/deploy.sh vps:/opt/second-brain/`, i.e. to `/opt/second-brain/deploy.sh`. On a registry (CI) install `deploy/deploy.sh` does not exist; it only exists in build mode (full source tree uploaded).
+- Expected / acceptance criteria:
+  - The documented command works for both install modes (e.g. CI also places it at `deploy/deploy.sh`, or docs use the path that exists in each mode).
+  - `vps-setup.sh` and `DEPLOYMENT.md` agree.
+- Severity: low
+- Status: open
+
+### TODO-008: Docker Compose does not forward the AI_* provider variables
+- Found: 2026-10-22 by P3 review, `compose.yaml` (`x-model-environment` forwards only `OPENROUTER_*` and requires `OPENROUTER_API_KEY`)
+- Evidence: registry mode (`AI_PROVIDERS`, `AI_PROVIDER_<NAME>_*`, `AI_<ROLE>`) works when the engine runs on the host (verified against `dist/runtime-config.js`) but those variables never reach the `engine`, `auth`, `admin` and `automation-worker` containers. Profile variable names are dynamic, so a fixed `environment:` list cannot cover them.
+- Expected / acceptance criteria:
+  - Registry-mode variables reach all four runtime services in a Compose deployment, without exposing unrelated secrets to services that do not need them (decide: `env_file` with an allowlist vs. a generated override file).
+  - `OPENROUTER_API_KEY` stays required for legacy installs (no setting AI_* means today's behavior) but not for registry-only installs.
+  - A deployment test covers legacy and registry mode.
+  - Legacy installs (OPENROUTER_* only) work unchanged.
+- Severity: medium (blocks provider alternation in Docker; legacy Docker installs unaffected)
+- Status: open
+
+### TODO-009: first `npm run dev` on a fresh database prints a failure and skips the next-step hint
+- Found: 2026-11-04 by the user's first local run (screenshot of the terminal), `tools/local-dev.mjs` (`up`, lines ~166-196)
+- Evidence: with an empty database `docker compose up --detach --build` ends with `Container ...-engine-1 Error dependency engine failed to start` / `...-admin-1 ... failed to start` / `dependency failed to start: container second-brain-dev-engine-1 is unhealthy`, then `The local Docker Compose command failed.` and exit 1. engine/admin/worker log "Active embedding spaces are missing... Bootstrap the owner account before the engine can start." which is expected until `npm run dev:bootstrap` runs. `runCompose` aborts via `fail()` before the hint "finish the one-time owner setup with npm run dev:bootstrap" is printed.
+- Expected / acceptance criteria:
+  - On a fresh database the command explains that the failure is the expected "owner not created yet" state and prints the exact next command (`npm run dev:bootstrap`) before exiting, or exits 0 with that hint.
+  - Real failures (build error, postgres unhealthy, migration failure) still exit non-zero with the original message.
+  - A test or manual check covers fresh-database and already-bootstrapped runs.
+- Severity: low (confusing first-run UX, no functional defect)
+- Status: open
 
 ## Done
 

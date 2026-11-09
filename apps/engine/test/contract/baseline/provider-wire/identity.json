@@ -1,0 +1,141 @@
+{
+  "configured": {
+    "provider": "openrouter",
+    "model": "test/embedding-model",
+    "modelRevision": "2026-08-01",
+    "dimensions": 3,
+    "ingestionProvider": "openrouter",
+    "ingestionModel": "test/ingestion-model"
+  },
+  "defaults": {
+    "provider": "openrouter",
+    "model": "google/gemini-embedding-001",
+    "modelRevision": "provider-managed",
+    "dimensions": 1536,
+    "ingestionProvider": "openrouter",
+    "ingestionModel": "deepseek/deepseek-v4-flash"
+  },
+  "answerFallback": {
+    "provider": "openrouter",
+    "model": "google/gemini-embedding-001",
+    "modelRevision": "provider-managed",
+    "dimensions": 1536,
+    "ingestionProvider": "openrouter",
+    "ingestionModel": "test/only-answer"
+  },
+  "constructorErrors": [
+    {
+      "options": {
+        "baseUrl": "http://example.com/api/v1"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter base URL must use HTTPS outside loopback development.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "baseUrl": "not a url"
+      },
+      "error": {
+        "kind": "Error",
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "fields": {
+          "code": "ERR_INVALID_URL",
+          "input": "not a url"
+        }
+      }
+    },
+    {
+      "options": {
+        "embeddingModel": " "
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Embedding model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "embeddingModelRevision": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Embedding model revision must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "answerModel": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Answer model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "ingestionModel": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Ingestion model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "dreamingModel": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Dreaming model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "verificationModel": ""
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Verification model must not be blank.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "dimensions": 0
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "Embedding dimensions must be a positive integer.",
+        "fields": {}
+      }
+    },
+    {
+      "options": {
+        "requestTimeoutMs": 1.5
+      },
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter request timeout must be a positive integer.",
+        "fields": {}
+      }
+    }
+  ]
+}

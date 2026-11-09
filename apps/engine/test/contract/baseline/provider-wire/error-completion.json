@@ -1,0 +1,195 @@
+{
+  "noChoices": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter returned an invalid chat completion.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "truncated": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "The OpenRouter answer completion did not finish normally.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "emptyText": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter returned no verification text.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "verification",
+        "model": "test/verification-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "missingUsage": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter did not return audited token usage.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "ingestion",
+        "model": "test/ingestion-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "missingUsageDreaming": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter did not return audited token usage.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "dreaming",
+        "model": "test/dreaming-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "malformedModelJson": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "The reasoning model returned malformed JSON.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": 120,
+        "outputTokens": 30,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "invalidEmbeddingShape": {
+    "outcome": {
+      "error": {
+        "kind": "Error",
+        "name": "Error",
+        "message": "OpenRouter returned an invalid embedding response.",
+        "fields": {}
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  },
+  "invalidUsageShape": {
+    "outcome": {
+      "result": [
+        [
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "succeeded",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": null
+      }
+    ],
+    "requests": 1
+  }
+}

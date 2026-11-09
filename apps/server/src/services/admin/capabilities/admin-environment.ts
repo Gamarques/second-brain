@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import {
-  environmentConfigurationCatalog,
+  environmentConfigurationItem,
   environmentServiceRestartTargets,
+  maximumEnvironmentConfigurationChanges,
   type EnvironmentConfigurationManager,
   type StageEnvironmentConfigurationInput,
 } from "@second-brain/engine/environment-configuration";
@@ -15,9 +16,14 @@ import {
 import { defineCapability } from "@second-brain/engine/capabilities/define";
 import { idempotencyKeySchema, timestampSchema } from "@second-brain/engine/capabilities/schemas";
 
-const editableNameSchema = z.enum(
-  environmentConfigurationCatalog.map(({ name }) => name),
-);
+/** The fixed OpenRouter catalog plus provider registry (`AI_*`) settings. */
+const editableNameSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .refine((name) => environmentConfigurationItem(name) !== undefined, {
+    message: "The name is not an editable environment variable.",
+  });
 
 const variableSchema = z.discriminatedUnion("secret", [
   z.object({
@@ -39,7 +45,7 @@ const listedConfigurationSchema = z.object({
   revision: z.number().int().nonnegative(),
   restartRequired: z.boolean(),
   updatedAt: timestampSchema.nullable(),
-  variables: z.array(variableSchema).max(environmentConfigurationCatalog.length),
+  variables: z.array(variableSchema).max(512),
 });
 
 const changeSchema = z.discriminatedUnion("operation", [
@@ -57,12 +63,12 @@ const changeSchema = z.discriminatedUnion("operation", [
 const updateSchema = z.object({
   expectedRevision: z.number().int().nonnegative(),
   idempotencyKey: idempotencyKeySchema,
-  changes: z.array(changeSchema).min(1).max(environmentConfigurationCatalog.length),
+  changes: z.array(changeSchema).min(1).max(maximumEnvironmentConfigurationChanges),
 });
 
 const stagedConfigurationSchema = z.object({
   revision: z.number().int().positive(),
-  changedNames: z.array(editableNameSchema).min(1).max(environmentConfigurationCatalog.length),
+  changedNames: z.array(editableNameSchema).min(1).max(maximumEnvironmentConfigurationChanges),
   restartRequired: z.literal(true),
   updatedAt: timestampSchema.nullable(),
   replayed: z.boolean(),

@@ -1,0 +1,137 @@
+{
+  "missing": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  "empty": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ]
+  },
+  "blank": {
+    "requests": [],
+    "outcome": {
+      "embed": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      },
+      "probe": {
+        "error": {
+          "kind": "Error",
+          "name": "Error",
+          "message": "OPENROUTER_API_KEY is required for semantic capabilities.",
+          "fields": {}
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "embedding",
+        "model": "test/embedding-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unknown"
+      },
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "unknown"
+      }
+    ]
+  }
+}

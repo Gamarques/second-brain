@@ -1,0 +1,56 @@
+{
+  "requests": [
+    {
+      "url": "http://localhost:4010/api/v1/embeddings",
+      "method": "POST",
+      "init": [
+        "method",
+        "headers",
+        "body",
+        "signal"
+      ],
+      "headers": {
+        "authorization": "Bearer <redacted>",
+        "content-type": "application/json",
+        "x-title": "Wire Contract",
+        "http-referer": "https://brain.example.test"
+      },
+      "body": {
+        "model": "test/embedding-model",
+        "input": [
+          "hello"
+        ],
+        "input_type": "search_query",
+        "encoding_format": "float",
+        "dimensions": 3,
+        "provider": {
+          "data_collection": "deny",
+          "zdr": true
+        }
+      },
+      "signal": true
+    }
+  ],
+  "outcome": {
+    "result": [
+      [
+        0.5,
+        0.25,
+        0.125
+      ]
+    ]
+  },
+  "observed": [
+    {
+      "operation": "embedding",
+      "model": "test/embedding-model",
+      "occurredAt": "<timestamp>",
+      "durationMs": "<duration>",
+      "outcome": "succeeded",
+      "inputTokens": null,
+      "outputTokens": null,
+      "cost": null,
+      "errorReason": null
+    }
+  ]
+}

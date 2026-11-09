@@ -62,14 +62,59 @@ const editableEnvironmentVariableNames = [
   "OPENROUTER_APP_URL",
 ] as const;
 
+/**
+ * Provider registry role bindings the administrator may edit. The embedding
+ * binding (`AI_EMBEDDING*`) and the `AI_REQUIRE_ZDR` policy stay
+ * operator-only, like `OPENROUTER_EMBEDDING_MODEL`.
+ */
+export const providerRegistryEditableNames = [
+  "AI_PROVIDERS",
+  "AI_ANSWER",
+  "AI_INGESTION",
+  "AI_DREAMING",
+  "AI_VERIFICATION",
+] as const;
+
+/**
+ * Editable `AI_PROVIDER_<NAME>_<SUFFIX>` settings. `BASE_URL` stays
+ * operator-only, like `OPENROUTER_BASE_URL`, so a stored override cannot
+ * send a configured key to another endpoint.
+ */
+export const providerProfileEditableSuffixes = [
+  "KIND",
+  "PRESET",
+  "API_KEY",
+  "PRIVACY",
+  "STRUCTURED",
+  "EXTRA_HEADERS",
+  "USER_AGENT",
+  "SESSION_HEADER",
+  "MIN_COMPLETION_TOKENS",
+  "SEND_DIMENSIONS",
+  "REQUEST_TIMEOUT_MS",
+] as const;
+
+const providerProfileVariablePattern = new RegExp(
+  `^AI_PROVIDER_[A-Z][A-Z0-9]{0,31}_(?:${providerProfileEditableSuffixes.join("|")})$`,
+  "u",
+);
+
+export type ProviderRegistryEnvironmentVariableName =
+  | (typeof providerRegistryEditableNames)[number]
+  | `AI_PROVIDER_${string}_${(typeof providerProfileEditableSuffixes)[number]}`;
+
 export type EditableEnvironmentVariableName =
-  (typeof editableEnvironmentVariableNames)[number];
+  | (typeof editableEnvironmentVariableNames)[number]
+  | ProviderRegistryEnvironmentVariableName;
 
 export interface EnvironmentConfigurationCatalogItem {
   readonly name: EditableEnvironmentVariableName;
   readonly secret: boolean;
   readonly restartRequired: true;
 }
+
+/** Upper bound for one staged change set, covering several provider profiles. */
+export const maximumEnvironmentConfigurationChanges = 64;
 
 /**
  * Infrastructure, authentication, network binding, provider endpoint, and
@@ -232,12 +277,35 @@ export interface EnvironmentConfigurationManager {
   ): Promise<EnvironmentConfigurationRestartResult | null>;
 }
 
-const catalogByName = new Map(
+const catalogByName = new Map<string, EnvironmentConfigurationCatalogItem>(
   environmentConfigurationCatalog.map((item) => [item.name, item] as const),
 );
 
+/**
+ * The definition of an editable variable: the fixed OpenRouter catalog, a
+ * provider registry role binding, or an `AI_PROVIDER_<NAME>_<SUFFIX>`
+ * profile setting, whose `API_KEY` is a secret.
+ */
+export function environmentConfigurationItem(
+  name: string,
+): EnvironmentConfigurationCatalogItem | undefined {
+  const fixed = catalogByName.get(name);
+  if (fixed !== undefined) return fixed;
+  if ((providerRegistryEditableNames as readonly string[]).includes(name)) {
+    return { name: name as EditableEnvironmentVariableName, secret: false, restartRequired: true };
+  }
+  if (providerProfileVariablePattern.test(name)) {
+    return {
+      name: name as EditableEnvironmentVariableName,
+      secret: name.endsWith("_API_KEY"),
+      restartRequired: true,
+    };
+  }
+  return undefined;
+}
+
 function requireEditableName(name: string): EnvironmentConfigurationCatalogItem {
-  const item = catalogByName.get(name as EditableEnvironmentVariableName);
+  const item = environmentConfigurationItem(name);
   if (item === undefined) {
     throw new Error(`${name} is not an editable environment variable.`);
   }
@@ -381,7 +449,7 @@ export function environmentConfigurationOverlay(
   try {
     const overlay: EnvironmentRecord = {};
     for (const [rawName, entry] of Object.entries(state.entries)) {
-      const item = catalogByName.get(rawName as EditableEnvironmentVariableName);
+      const item = environmentConfigurationItem(rawName);
       if (item === undefined || entry === undefined) {
         throw new EnvironmentConfigurationCorruptionError();
       }
@@ -458,7 +526,7 @@ function validateStageInput(input: StageEnvironmentConfigurationInput): void {
   if (input.changes.length < 1) {
     throw new Error("changes must contain at least one variable.");
   }
-  if (input.changes.length > environmentConfigurationCatalog.length) {
+  if (input.changes.length > maximumEnvironmentConfigurationChanges) {
     throw new Error("changes contains too many variables.");
   }
   const names = new Set<string>();
@@ -473,11 +541,20 @@ function validateStageInput(input: StageEnvironmentConfigurationInput): void {
 }
 
 function publicState(state: EnvironmentConfigurationState): ListedEnvironmentConfiguration {
+  // The fixed catalog is always listed; provider registry settings only once stored.
+  const registryItems = Object.keys(state.entries)
+    .filter((name) => !catalogByName.has(name))
+    .sort()
+    .map((name) => {
+      const item = environmentConfigurationItem(name);
+      if (item === undefined) throw new Error("Stored environment configuration contains an unknown name.");
+      return item;
+    });
   return {
     revision: state.revision,
     restartRequired: state.restartRequired,
     updatedAt: state.updatedAt,
-    variables: environmentConfigurationCatalog.map((item): ListedEnvironmentVariable => {
+    variables: [...environmentConfigurationCatalog, ...registryItems].map((item): ListedEnvironmentVariable => {
       const entry = state.entries[item.name];
       if (item.secret) {
         return {

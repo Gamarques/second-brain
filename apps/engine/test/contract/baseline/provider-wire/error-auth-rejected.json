@@ -1,0 +1,205 @@
+{
+  "probe": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "diagnostic",
+        "model": "test/probe-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "answer": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "knowledge_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "answerAcrossBrain": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "reason": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "brain_ask",
+        "model": "test/answer-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "propose": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "ingestion",
+        "model": "test/ingestion-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "createPlan": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "dreaming",
+        "model": "test/dreaming-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  },
+  "verifyUpdates": {
+    "outcome": {
+      "error": {
+        "kind": "OpenRouterRequestError",
+        "name": "OpenRouterRequestError",
+        "message": "The OpenRouter request failed with status 401.",
+        "fields": {
+          "status": 401,
+          "reason": "authentication",
+          "code": "OPENROUTER_AUTHENTICATION_FAILED",
+          "name": "OpenRouterRequestError"
+        }
+      }
+    },
+    "observed": [
+      {
+        "operation": "verification",
+        "model": "test/verification-model",
+        "occurredAt": "<timestamp>",
+        "durationMs": "<duration>",
+        "outcome": "failed",
+        "inputTokens": null,
+        "outputTokens": null,
+        "cost": null,
+        "errorReason": "authentication"
+      }
+    ],
+    "requests": 1
+  }
+}

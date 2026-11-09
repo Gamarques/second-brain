@@ -1,0 +1,75 @@
+{
+  "requests": [
+    {
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "method": "POST",
+      "init": [
+        "method",
+        "headers",
+        "body",
+        "signal"
+      ],
+      "headers": {
+        "authorization": "Bearer <redacted>",
+        "content-type": "application/json",
+        "x-title": "second-brain"
+      },
+      "body": {
+        "model": "test/probe-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Return {\"ok\":true}."
+          }
+        ],
+        "max_tokens": 128,
+        "provider": {
+          "data_collection": "deny",
+          "zdr": true,
+          "require_parameters": true
+        },
+        "response_format": {
+          "type": "json_schema",
+          "json_schema": {
+            "name": "configuration_probe",
+            "strict": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              },
+              "required": [
+                "ok"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "signal": true
+    }
+  ],
+  "outcome": {
+    "result": {
+      "ok": true
+    }
+  },
+  "observed": [
+    {
+      "operation": "diagnostic",
+      "model": "test/probe-model",
+      "occurredAt": "<timestamp>",
+      "durationMs": "<duration>",
+      "outcome": "succeeded",
+      "inputTokens": 20,
+      "outputTokens": 5,
+      "cost": 0.0004,
+      "errorReason": null
+    }
+  ]
+}
